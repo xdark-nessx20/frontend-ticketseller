@@ -1,186 +1,245 @@
-# Implementation Plan: Mantenimiento de Recinto – Frontend
+# Implementation Plan: Mantenimiento de Recinto (Cambio de Estado de Asientos) – Frontend
 
-**Date**: 09/05/2026  
-**Specs**:
-
-- [003-MantenimientoDeRecinto.md](/docs/plan/003-MantenimientoDeRecinto.md)
+**Date**: 09/05/2026
 
 ## Summary
 
-El **Administrador** debe poder cambiar el estado de asientos individuales o en bulk desde la interfaz web: poner asientos en mantenimiento, anularlos, o devolverlos a disponible, con un motivo requerido para cada operación. También debe poder consultar el historial de cambios de estado de cualquier asiento.
+El **Gestor de Inventario** debe poder cambiar el estado de asientos individuales o en masa dentro del contexto de un
+evento específico, con validación de las transiciones permitidas por la máquina de estados del negocio. Toda operación
+manual queda registrada en un historial de auditoría consultable por el administrador.
 
-La página de mantenimiento reutiliza el componente `SeatGrid` del plan 002, pero agrega un modo de selección para operaciones de mantenimiento. El administrador activa el modo "mantenimiento", selecciona celdas y elige el estado destino con un motivo. El store `seatSelectionStore` (Zustand) gestiona la selección múltiple de esta operación.
-
-Este módulo depende del plan 002 completado (el mapa debe existir).
+Este módulo se integra como sección dentro de la vista de un evento — no es una página independiente. Las acciones
+sobre asientos siempre están contextualizadas a un eventoId. Depende del feature 002 para la existencia de asientos y
+del feature de gestión de eventos para el eventoId.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x  
-**Framework**: React 18+ (Vite)  
-**Styling**: Tailwind CSS 3.x  
-**Server State**: TanStack Query v5  
-**Client State**: Zustand  
-**HTTP Client**: Axios  
-**Router**: React Router v6  
-**Testing**: Vitest + React Testing Library + MSW  
-**Target Platform**: Admin Panel SPA  
-**Performance Goals**: Cambio masivo de 100 asientos en menos de 2s.  
-**Constraints**: El motivo es obligatorio para todo cambio de estado. Los cambios masivos operan sobre el evento activo del recinto. El historial muestra los últimos 50 cambios por defecto.  
-**Scale/Scope**: Feature operativo — depende de plan 002.
+**Language/Version**: TypeScript 5.x
+**Framework**: React 18+ (Vite)
+**Styling**: Tailwind CSS 3.x
+**Server State**: TanStack Query v5
+**Client State**: Zustand (selección de asientos para cambio masivo)
+**HTTP Client**: Axios
+**Router**: React Router v6
+**Target Platform**: Admin Panel SPA
+**Performance Goals**: Cambio individual reflejado en UI en menos de 1s. Cambio masivo de hasta 200 asientos completa
+en menos de 5s.
+**Constraints**: No se puede cambiar un asiento `VENDIDO` a `DISPONIBLE` sin procesar la cancelación primero. Los
+cambios masivos informan los asientos omitidos con su razón. Todas las operaciones requieren eventoId.
+**Scale/Scope**: Extiende el feature 002 — la entidad `Asiento` debe existir. Depende del feature de eventos (012).
+
+## TypeScript Types
+
+> Estos tipos deben mantenerse alineados con los DTOs del backend. Cualquier cambio en los contratos de la API debe
+> reflejarse aquí primero.
+
+### Enums
+
+```typescript
+type EstadoAsiento = 'DISPONIBLE' | 'BLOQUEADO' | 'RESERVADO' | 'VENDIDO' | 'MANTENIMIENTO' | 'ANULADO';
+```
+
+### Interfaces de Respuesta
+
+```typescript
+interface HistorialCambioResponse {
+  fechaHora: string;          // ISO 8601
+  usuario: string;
+  estadoAnterior: EstadoAsiento;
+  estadoNuevo: EstadoAsiento;
+  motivo: string | null;
+}
+
+interface CambiarEstadoMasivoResponse {
+  modificados: number;
+  omitidos: number;
+  mensajes: string[];
+}
+
+interface AsientoConEstadoResponse {
+  id: string;
+  numero: string;
+  fila: number;
+  columna: number;
+  zonaId: string;
+  estado: EstadoAsiento;
+}
+```
+
+### Interfaces de Request
+
+```typescript
+interface CambiarEstadoRequest {
+  estadoDestino: EstadoAsiento;
+  motivo?: string;
+}
+
+interface CambiarEstadoMasivoRequest {
+  asientoIds: string[];     // min 1
+  estadoDestino: EstadoAsiento;
+  motivo?: string;
+}
+```
+
+### Transiciones Válidas (referencia visual)
+
+```typescript
+// DISPONIBLE  → BLOQUEADO, RESERVADO, MANTENIMIENTO
+// BLOQUEADO   → DISPONIBLE, MANTENIMIENTO
+// RESERVADO   → DISPONIBLE, VENDIDO
+// VENDIDO     → (ninguna transición manual)
+// MANTENIMIENTO → DISPONIBLE, BLOQUEADO
+// ANULADO     → (ninguna transición manual)
+```
 
 ## Coding Standards
 
 > **⚠️ ADVERTENCIA — Reglas obligatorias de estilo de código:**
 >
-> 1. **NO crear comentarios innecesarios.**
-> 2. **Clean Code**: nombres descriptivos, componentes pequeños.
-> 3. **`interface`** para objetos, **`type`** para uniones.
-> 4. Solo componentes funcionales.
-> 5. Lógica en custom hooks.
-> 6. Solo clases Tailwind.
+> 1. **NO crear comentarios innecesarios.** El código debe ser autoexplicativo. Solo se permiten comentarios cuando
+>    aportan contexto que el código solo no puede expresar.
+> 2. **Se DEBEN respetar los principios del Clean Code.** Nombres descriptivos, componentes pequeños de responsabilidad
+>    única, sin código muerto, sin duplicación.
+> 3. **Para tipos, usar `interface` para objetos y props, `type` para uniones y primitivas.**
+> 4. **Solo componentes funcionales** — sin class components.
+> 5. **Lógica de negocio en custom hooks** — los componentes solo renderizan.
+> 6. **Sin estilos inline** — solo clases Tailwind.
 
 ## Project Structure
+
+### Archivos nuevos que agrega este feature
 
 ```text
 src/
 ├── types/
-│   └── mantenimiento.types.ts    ← CambiarEstadoRequest, HistorialCambioResponse, etc.
+│   └── mantenimiento.types.ts
 ├── services/
-│   └── mantenimientoService.ts
-├── stores/
-│   └── seatSelectionStore.ts     ← Zustand: IDs seleccionados para operación masiva
+│   └── asientoMantenimientoService.ts
 ├── hooks/
 │   └── mantenimiento/
 │       ├── useCambiarEstadoAsiento.ts
 │       ├── useCambiarEstadoMasivo.ts
 │       └── useHistorialAsiento.ts
-├── pages/
-│   └── mantenimiento/
-│       ├── SeatMaintenancePage.tsx
-│       └── SeatHistoryPage.tsx
 └── components/
     └── mantenimiento/
-        ├── StateChangeForm.tsx
-        ├── BulkStateChangePanel.tsx
-        ├── StateHistoryTable.tsx
-        └── StateChangeBadge.tsx
-
-src/__tests__/
-└── mantenimiento/
-    ├── StateChangeForm.test.tsx
-    ├── BulkStateChangePanel.test.tsx
-    └── StateHistoryTable.test.tsx
+        ├── AsientoEstadoBadge.tsx
+        ├── CambiarEstadoModal.tsx
+        ├── CambiarEstadoMasivoModal.tsx
+        ├── ResultadoMasivoAlert.tsx
+        └── HistorialAsientoPanel.tsx
 ```
 
 ---
 
-## Phase 1: Foundational
+## Phase 1: Foundational (Blocking Prerequisites)
 
-- [ ] T001 Definir interfaces en `mantenimiento.types.ts`:
-  - `CambiarEstadoRequest` (estadoDestino, motivo)
-  - `CambiarEstadoMasivoRequest` (asientoIds, estadoDestino, motivo)
-  - `CambiarEstadoMasivoResponse` (exitosos, fallidos)
-  - `HistorialCambioResponse` (id, asientoId, estadoAnterior, estadoNuevo, motivo, usuario, fecha)
-  - Importar `EstadoAsiento` de `asiento.types.ts`
-- [ ] T002 Implementar `mantenimientoService.ts`:
-  - `cambiarEstado(eventoId, asientoId, data)` — PATCH `/api/v1/eventos/{eventoId}/asientos/{asientoId}/estado`
-  - `cambiarEstadoMasivo(eventoId, data)` — PATCH `/api/v1/eventos/{eventoId}/asientos/estado-masivo`
-  - `getHistorial(eventoId, asientoId)` — GET `/api/v1/eventos/{eventoId}/asientos/{asientoId}/historial`
-- [ ] T003 Implementar `seatSelectionStore.ts` con Zustand: `selectedIds: string[]`, acciones `toggle`, `selectAll`, `clear`, `setEstadoDestino`, `setMotivo`
-- [ ] T004 Definir rutas: `/admin/eventos/:eventoId/mantenimiento`, `/admin/eventos/:eventoId/asientos/:asientoId/historial`
+**Purpose**: Tipos TypeScript y servicio — base compartida por todas las user stories.
 
-**Checkpoint**: Tipos, servicio y store compilando
+**⚠️ CRITICAL**: Depende de los features 002 (asientos) y 012 (eventos) implementados.
 
----
+- [ ] T001 Definir tipos en `mantenimiento.types.ts`:
+    - `HistorialCambioResponse`, `CambiarEstadoMasivoResponse`, `AsientoConEstadoResponse`
+    - `CambiarEstadoRequest`, `CambiarEstadoMasivoRequest`
+    - Enum `EstadoAsiento` (si no está ya definido en `asiento.types.ts`, importar desde allí)
+- [ ] T002 Implementar `asientoMantenimientoService.ts`:
+    - `cambiarEstado(eventoId, asientoId, data)` → `PATCH /api/eventos/{eventoId}/asientos/{asientoId}/estado`
+    - `cambiarEstadoMasivo(eventoId, data)` → `PATCH /api/eventos/{eventoId}/asientos/estado-masivo`
+    - `getHistorial(eventoId, asientoId)` → `GET /api/eventos/{eventoId}/asientos/{asientoId}/historial`
 
-## Phase 2: User Story 1 — Cambiar Estado de Asiento Individual (Priority: P2)
-
-**Goal**: El administrador puede cambiar el estado de un asiento específico ingresando un motivo.
-
-**Independent Test**: Hacer clic en un asiento en la página de mantenimiento abre un panel con el formulario de cambio de estado. Seleccionar "MANTENIMIENTO" con motivo "Silla rota" y confirmar actualiza el color de la celda. Sin motivo muestra error de validación.
-
-### Tests para User Story 1
-
-- [ ] T005 [P] [US1] Test: `StateChangeForm` valida que el motivo no esté vacío — `StateChangeForm.test.tsx`
-- [ ] T006 [P] [US1] Test: `StateChangeForm` llama al servicio con estado y motivo correctos — `StateChangeForm.test.tsx`
-- [ ] T007 [P] [US1] Test: el panel de cambio individual se abre al clicar en un asiento — test
-
-### Implementación de User Story 1
-
-- [ ] T008 [US1] Implementar `useCambiarEstadoAsiento.ts` con `useMutation`: invalida `['asientos', eventoId]`
-- [ ] T009 [US1] Implementar `StateChangeBadge.tsx`: badge de color para cada `EstadoAsiento`
-- [ ] T010 [US1] Implementar `StateChangeForm.tsx`: select de estado destino (solo estados válidos), textarea motivo obligatorio, validación Zod
-- [ ] T011 [US1] Implementar `SeatMaintenancePage.tsx`: renderiza `SeatGrid` del plan 002 en modo mantenimiento; al clicar celda abre panel deslizante con `StateChangeForm`
-
-**Checkpoint**: Cambio individual de estado funcional
+**Checkpoint**: Tipos definidos, servicio compilando
 
 ---
 
-## Phase 3: User Story 2 — Cambio Masivo de Estado (Priority: P1)
+## Phase 2: User Story 1 — Cambio Individual de Estado de Asiento (Priority: P1)
 
-**Goal**: El administrador puede seleccionar múltiples asientos y cambiar su estado en una sola operación.
+**Goal**: El gestor puede cambiar el estado de un asiento específico dentro de un evento. Las transiciones inválidas
+son rechazadas con mensaje claro. Cada cambio queda registrado en el historial.
 
-**Independent Test**: Activar modo "Selección masiva", hacer clic en 5 celdas las resalta con un contador. El panel lateral muestra "5 asientos seleccionados", select de estado y campo de motivo. Confirmar procesa todos y muestra un resumen de éxitos/fallos.
+**Independent Test**: En la vista del evento, seleccionar un asiento y cambiar su estado a "MANTENIMIENTO". El badge
+del asiento se actualiza inmediatamente. Intentar mover un asiento "VENDIDO" a "DISPONIBLE" muestra error 409.
 
-### Tests para User Story 2
+- [ ] T003 [US1] Implementar `useCambiarEstadoAsiento.ts` con `useMutation`: invalida la query del asiento en `onSuccess`
+- [ ] T004 [US1] Implementar `AsientoEstadoBadge.tsx`: badge de color según `EstadoAsiento` (verde/amarillo/rojo/gris)
+- [ ] T005 [US1] Implementar `CambiarEstadoModal.tsx`: select de estado destino (solo opciones válidas según estado
+  actual), campo motivo opcional, validación antes de confirmar
+- [ ] T006 [US1] Exponer botón "Cambiar Estado" en el componente de asiento de la vista de evento; abre
+  `CambiarEstadoModal` con el `asientoId` y `eventoId` en contexto
+- [ ] T007 [US1] Manejar error 409 (transición inválida): mostrar mensaje descriptivo del backend en el modal
 
-- [ ] T012 [P] [US2] Test: seleccionar 3 celdas actualiza el contador en `BulkStateChangePanel` — `BulkStateChangePanel.test.tsx`
-- [ ] T013 [P] [US2] Test: confirmar cambio masivo muestra resumen con exitosos y fallidos — `BulkStateChangePanel.test.tsx`
-- [ ] T014 [P] [US2] Test: `useCambiarEstadoMasivo` invalida la query del mapa en `onSuccess`
+**Checkpoint**: Cambio individual funcional con validación de transición y feedback de error
 
-### Implementación de User Story 2
+---
 
-- [ ] T015 [US2] Implementar `useCambiarEstadoMasivo.ts` con `useMutation`
-- [ ] T016 [US2] Implementar `BulkStateChangePanel.tsx`: muestra contador de seleccionados, select de estado, textarea de motivo, botón confirmar, resultados en tabla inline (exitosos en verde, fallidos en rojo)
-- [ ] T017 [US2] Integrar `BulkStateChangePanel` en `SeatMaintenancePage.tsx` — panel derecho visible cuando `selectedIds.length > 0`
+## Phase 3: User Story 2 — Cambio Masivo de Estado de Asientos (Priority: P2)
+
+**Goal**: El gestor puede seleccionar múltiples asientos y aplicar el mismo cambio de estado en bloque. Los asientos
+no modificables quedan excluidos y se informa cuántos fueron omitidos.
+
+**Independent Test**: Seleccionar 10 asientos, elegir "BLOQUEADO" como destino y confirmar. El resumen muestra
+"modificados: 8, omitidos: 2" con razones. El estado de los 8 asientos se actualiza en pantalla.
+
+- [ ] T008 [US2] Implementar `useCambiarEstadoMasivo.ts` con `useMutation`
+- [ ] T009 [US2] Implementar `CambiarEstadoMasivoModal.tsx`: muestra los asientos seleccionados, select de estado
+  destino, campo motivo opcional, botón confirmar
+- [ ] T010 [US2] Implementar `ResultadoMasivoAlert.tsx`: muestra `CambiarEstadoMasivoResponse` con conteos de
+  modificados/omitidos y mensajes descriptivos
+- [ ] T011 [US2] Agregar modo selección múltiple en la vista de asientos del evento: checkboxes por asiento, botón
+  "Cambiar estado a seleccionados" que abre `CambiarEstadoMasivoModal`
 
 **Checkpoint**: Cambio masivo funcional con resumen de resultados
 
 ---
 
-## Phase 4: User Story 3 — Historial de Cambios (Priority: P2)
+## Phase 4: User Story 3 — Historial de Cambios de Estado (Priority: P3)
 
-**Goal**: El administrador puede ver el historial completo de cambios de estado de un asiento.
+**Goal**: El gestor puede consultar el historial cronológico de cambios manuales de cualquier asiento, ordenado del
+más reciente al más antiguo. Para asientos sin historial, se muestra lista vacía.
 
-**Independent Test**: Navegar a `/admin/eventos/:eventoId/asientos/:asientoId/historial` muestra tabla cronológica con estado anterior, estado nuevo, motivo, usuario y fecha de cada cambio.
+**Independent Test**: Hacer clic en un asiento y abrir su historial. La lista muestra fecha, usuario, estado anterior,
+estado nuevo y motivo. Para un asiento sin cambios manuales, se muestra "Sin historial".
 
-### Tests para User Story 3
+- [ ] T012 [US3] Implementar `useHistorialAsiento.ts` con `useQuery`: clave `['historial', eventoId, asientoId]`
+- [ ] T013 [US3] Implementar `HistorialAsientoPanel.tsx`: lista cronológica de `HistorialCambioResponse` con
+  fecha formateada, usuario, badges de estado anterior → nuevo, y motivo si existe
+- [ ] T014 [US3] Integrar panel como sección colapsable en el modal o drawer de detalle del asiento
 
-- [ ] T018 [P] [US3] Test: `StateHistoryTable` renderiza filas con datos mockeados — `StateHistoryTable.test.tsx`
-- [ ] T019 [P] [US3] Test: tabla muestra mensaje vacío si no hay historial — `StateHistoryTable.test.tsx`
-
-### Implementación de User Story 3
-
-- [ ] T020 [US3] Implementar `useHistorialAsiento.ts` con `useQuery`: clave `['historial', eventoId, asientoId]`
-- [ ] T021 [US3] Implementar `StateHistoryTable.tsx`: columnas estadoAnterior (`StateChangeBadge`), estadoNuevo (`StateChangeBadge`), motivo, usuario, fecha formateada
-- [ ] T022 [US3] Implementar `SeatHistoryPage.tsx`: usa `useHistorialAsiento`, renderiza `StateHistoryTable`
-
-**Checkpoint**: Historial de cambios funcional
+**Checkpoint**: Historial funcional, visible y correctamente formateado
 
 ---
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T023 Agregar confirmación antes de procesar cambio masivo (modal: "¿Cambiar N asientos a X?")
-- [ ] T024 Limpiar `seatSelectionStore` al desmontar `SeatMaintenancePage`
-- [ ] T025 Revisar accesibilidad del panel deslizante (focus trap, aria-dialog)
-- [ ] T026 Verificar tipos alineados con respuestas del backend
+- [ ] T015 Limitar las opciones del select de estado destino según las transiciones válidas definidas en los tipos —
+  no mostrar opciones que el backend rechazaría
+- [ ] T016 Verificar que la selección múltiple se limpia al cerrar el modal masivo o al navegar fuera
+- [ ] T017 Confirmar que los badges de `AsientoEstadoBadge` son consistentes con los de `StatusBadge` del feature 001
 
 ---
 
 ## Dependencies & Execution Order
 
-- **Foundational (Phase 1)**: Sin dependencias
-- **US1 (Phase 2)**: Depende de Foundational; reutiliza `SeatGrid` del plan 002
-- **US2 (Phase 3)**: Depende de US1 y de `seatSelectionStore`
-- **US3 (Phase 4)**: Depende de Foundational — independiente de US1/US2
-- **Polish (Phase 5)**: Depende de todo
+### Phase Dependencies
+
+- **Foundational (Phase 1)**: Depende de los features 002 y 012 completados
+- **US1 (Phase 2)**: Depende de Foundational
+- **US2 (Phase 3)**: Depende de US1 — reutiliza la infraestructura de selección de asientos
+- **US3 (Phase 4)**: Puede ejecutarse en paralelo con US2
+- **Polish (Phase 5)**: Depende de todas las user stories
+
+### Dentro de cada User Story
+
+- Tipos y servicio antes que hooks
+- Hooks antes que componentes
+- Verificar checkpoint antes de pasar a la siguiente fase
 
 ---
 
 ## Notes
 
-- **SeatGrid reutilizado**: el componente `SeatGrid` del plan 002 se extiende con una prop `mode: 'view' | 'maintenance' | 'assignment'` para controlar el comportamiento de clic
-- **Estados válidos de destino**: el select de estado destino no muestra VENDIDO ni OCUPADO — esos los gestiona el checkout; solo DISPONIBLE, BLOQUEADO, MANTENIMIENTO, ANULADO
-- **seatSelectionStore**: compartido con `seatMapStore` del plan 002 si se unifica, o instancia separada si el scope es diferente — preferir separación para evitar conflictos
-
+- **EstadoAsiento compartido**: el enum `EstadoAsiento` se define en `asiento.types.ts` del feature 002 — no duplicar;
+  importar desde allí en `mantenimiento.types.ts`
+- **Transiciones válidas en el select**: derivar las opciones disponibles del estado actual del asiento usando un mapa
+  estático en el frontend — esto es solo para UX (el backend valida de todos modos)
+- **Contexto de evento**: todas las llamadas requieren `eventoId` — pasarlo como parámetro a los hooks, no como estado
+  global, para evitar bugs al tener múltiples eventos en memoria
+- **Historial vacío**: el backend retorna lista vacía (no 404) para asientos sin historial — tratar correctamente en UI

@@ -1,166 +1,224 @@
 # Implementation Plan: Control de Acceso – Frontend
 
-**Date**: 09/05/2026  
-**Specs**:
-
-- [006-ControlDeAcceso.md](/docs/plan/006-ControlDeAcceso.md)
+**Date**: 09/05/2026
 
 ## Summary
 
-El **Operador de Compuerta** debe poder validar la entrada de asistentes escaneando el código QR de su ticket o ingresando el número de ticket manualmente. La interfaz muestra en tiempo real si el acceso es exitoso, denegado o si es un reingreso, junto con los datos del asiento y la zona asociada.
+El **Operador de Acceso** debe poder validar tickets en tiempo real en los puntos de ingreso del recinto. La interfaz
+permite ingresar o escanear el ID de un ticket y muestra de inmediato su estado, zona, categoría y metadatos del
+evento. También expone la estructura del recinto para que el operador valide coherencia de zona sin llamadas
+adicionales.
 
-Esta UI está optimizada para uso en dispositivos móviles y tablets por parte del personal en la entrada del evento. El flujo es simple: escanear → mostrar resultado. El store Zustand guarda la compuerta activa de la sesión y un historial local de las últimas validaciones para referencia rápida del operador.
-
-Este módulo depende del plan 004 completado (los tickets existen) y del plan 001 (las compuertas están configuradas).
+Esta es una interfaz de uso en campo, optimizada para velocidad de respuesta y legibilidad en condiciones de luz
+variable. No modifica datos — todas las operaciones son de solo lectura. Depende de los features 001 (recintos) y 004
+(tickets con estado vendido).
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x  
-**Framework**: React 18+ (Vite)  
-**Styling**: Tailwind CSS 3.x — interfaz mobile-first  
-**Server State**: TanStack Query v5  
-**Client State**: Zustand  
-**HTTP Client**: Axios  
-**Router**: React Router v6  
-**Testing**: Vitest + React Testing Library + MSW  
-**Target Platform**: Mobile / Tablet (Customer-facing gate tool)  
-**Performance Goals**: Validación de ticket responde en menos de 500ms.  
-**Constraints**: El sistema no registra el acceso (solo lee estado) — el control de acceso es de solo lectura. La página funciona sin estado de autenticación propio — el operador selecciona su compuerta al inicio de turno.  
-**Scale/Scope**: Feature operativo de acceso — depende de planes 001 y 004.
+**Language/Version**: TypeScript 5.x
+**Framework**: React 18+ (Vite)
+**Styling**: Tailwind CSS 3.x — texto grande, alto contraste
+**Server State**: TanStack Query v5 (sin caché — siempre estado fresco)
+**Client State**: Zustand (historial de consultas recientes del operador)
+**HTTP Client**: Axios
+**Router**: React Router v6
+**Target Platform**: Access Control SPA (uso en tablet/dispositivo de acceso)
+**Performance Goals**: Respuesta de consulta de ticket en menos de 1s. Interfaz funcional sin conexión a internet
+para mostrar historial reciente (consultas cacheadas localmente).
+**Constraints**: No usar caché del servidor — el estado de los tickets debe reflejarse en tiempo real. Sin
+modificaciones de datos desde esta interfaz.
+**Scale/Scope**: Feature de solo lectura. Consume los endpoints de consulta ya expuestos por el backend.
+
+## TypeScript Types
+
+> Estos tipos deben mantenerse alineados con los DTOs del backend. Cualquier cambio en los contratos de la API debe
+> reflejarse aquí primero.
+
+### Enums
+
+```typescript
+type EstadoTicketAcceso = 'DISPONIBLE' | 'RESERVADO' | 'VENDIDO' | 'CANCELADO' | 'ANULADO';
+```
+
+### Interfaces de Respuesta
+
+```typescript
+interface TicketEstadoResponse {
+  ticketId: string;
+  estado: EstadoTicketAcceso;
+  categoria: string;              // e.g. "VIP", "GENERAL"
+  bloque: string;                 // e.g. "A", "Norte"
+  coordenadaAcceso: string;       // e.g. "Puerta Norte"
+  eventoId: string;
+  fechaEvento: string;            // ISO 8601
+}
+
+interface BloqueResponse {
+  categoria: string;
+  coordenadaAcceso: string;
+}
+
+interface RecintoEstructuraAccesoResponse {
+  recintoId: string;
+  bloques: BloqueResponse[];
+}
+```
 
 ## Coding Standards
 
 > **⚠️ ADVERTENCIA — Reglas obligatorias de estilo de código:**
 >
-> 1. **NO crear comentarios innecesarios.**
-> 2. **Clean Code**: nombres descriptivos, componentes pequeños.
-> 3. **`interface`** para objetos, **`type`** para uniones.
-> 4. Solo componentes funcionales.
-> 5. Lógica en custom hooks.
-> 6. Solo clases Tailwind.
+> 1. **NO crear comentarios innecesarios.** El código debe ser autoexplicativo. Solo se permiten comentarios cuando
+>    aportan contexto que el código solo no puede expresar.
+> 2. **Se DEBEN respetar los principios del Clean Code.** Nombres descriptivos, componentes pequeños de responsabilidad
+>    única, sin código muerto, sin duplicación.
+> 3. **Para tipos, usar `interface` para objetos y props, `type` para uniones y primitivas.**
+> 4. **Solo componentes funcionales** — sin class components.
+> 5. **Lógica de negocio en custom hooks** — los componentes solo renderizan.
+> 6. **Sin estilos inline** — solo clases Tailwind.
 
 ## Project Structure
+
+### Archivos nuevos que agrega este feature
 
 ```text
 src/
 ├── types/
-│   └── acceso.types.ts           ← TicketEstadoResponse, etc.
+│   └── acceso.types.ts
 ├── services/
-│   └── accesoService.ts          ← GET /api/v1/tickets/{id}
+│   └── accesoService.ts
 ├── stores/
-│   └── accessStore.ts            ← Zustand: compuertaActiva, historial de sesión
+│   └── accesoStore.ts
 ├── hooks/
 │   └── acceso/
-│       ├── useValidarTicket.ts
-│       └── useCompuertas.ts
+│       ├── useConsultarTicket.ts
+│       └── useRecintoEstructuraAcceso.ts
 ├── pages/
 │   └── acceso/
-│       ├── GateSelectorPage.tsx
-│       └── GateValidationPage.tsx
+│       ├── AccesoPage.tsx
+│       └── EstructuraRecintoPage.tsx
 └── components/
     └── acceso/
-        ├── QRScanner.tsx
-        ├── ManualTicketInput.tsx
-        ├── TicketValidationResult.tsx
-        ├── AccessStatusBadge.tsx
-        └── ValidationHistoryList.tsx
-
-src/__tests__/
-└── acceso/
-    ├── TicketValidationResult.test.tsx
-    ├── ManualTicketInput.test.tsx
-    └── accessStore.test.ts
+        ├── BuscadorTicket.tsx
+        ├── ResultadoTicketCard.tsx
+        ├── EstadoAccesoBadge.tsx
+        ├── HistorialConsultasPanel.tsx
+        └── EstructuraRecintoTable.tsx
 ```
 
 ---
 
-## Phase 1: Foundational
+## Phase 1: Foundational (Blocking Prerequisites)
+
+**Purpose**: Tipos TypeScript y servicio — base de todas las consultas.
+
+**⚠️ CRITICAL**: Depende de los features 001 y 004 completados.
 
 - [ ] T001 Definir interfaces en `acceso.types.ts`:
-  - `TicketEstadoResponse` (ticketId, numeroTicket, estado, zona, fila, columna, categoria, metadata)
-  - `ValidationRecord` (ticketId, estado, zona, timestamp) — solo para el historial local
-  - Enum: `EstadoAcceso` (EXITOSO, DENEGADO, REINGRESO)
+    - `TicketEstadoResponse`, `BloqueResponse`, `RecintoEstructuraAccesoResponse`
+    - Enum `EstadoTicketAcceso`
 - [ ] T002 Implementar `accesoService.ts`:
-  - `validarTicket(ticketId)` — GET `/api/v1/tickets/{id}`
-- [ ] T003 Implementar `accessStore.ts` con Zustand:
-  - Estado: `compuertaActiva: CompuertaResponse | null`, `historial: ValidationRecord[]`
-  - Acciones: `setCompuerta`, `addValidation`, `clearHistorial`
-- [ ] T004 Definir rutas: `/acceso` (selector de compuerta), `/acceso/validar` (validación)
+    - `consultarTicket(ticketId)` → `GET /api/tickets/{id}`
+    - `getEstructuraRecinto(recintoId)` → `GET /api/recintos/{id}`
+- [ ] T003 Implementar `accesoStore.ts` con Zustand: lista de últimas 20 consultas realizadas (id, resultado,
+  timestamp), para mostrar historial sin nueva llamada al backend
+- [ ] T004 Definir rutas: `/acceso`, `/acceso/recinto/:id`
 
-**Checkpoint**: Tipos, servicio y store compilando
-
----
-
-## Phase 2: User Story 1 — Seleccionar Compuerta (Priority: P1)
-
-**Goal**: El operador selecciona su compuerta al inicio de turno antes de empezar a validar tickets.
-
-**Independent Test**: Navegar a `/acceso` muestra lista de compuertas del evento activo. Seleccionar "Puerta A - Zona Norte" y confirmar redirige a `/acceso/validar` con la compuerta activa visible.
-
-### Tests para User Story 1
-
-- [ ] T005 [P] [US1] Test: `GateSelectorPage` muestra lista de compuertas mockeadas — test
-- [ ] T006 [P] [US1] Test: seleccionar compuerta y confirmar guarda en `accessStore` — `accessStore.test.ts`
-
-### Implementación de User Story 1
-
-- [ ] T007 [US1] Implementar `useCompuertas.ts`: reutilizar servicio del plan 001
-- [ ] T008 [US1] Implementar `GateSelectorPage.tsx`: lista de compuertas (cards clickeables), botón confirmar que llama a `setCompuerta` y navega a `/acceso/validar`
-
-**Checkpoint**: Selección de compuerta funcional
+**Checkpoint**: Tipos definidos, servicio compilando, store del historial funcionando
 
 ---
 
-## Phase 3: User Story 2 — Validar Ticket (Priority: P1)
+## Phase 2: User Story 1 + 2 — Consulta de Estado, Zona y Categoría del Ticket (Priority: P1)
 
-**Goal**: El operador valida tickets escaneando el QR o ingresando el número manualmente. La pantalla muestra resultado claro verde/rojo/amarillo.
+**Goal**: El operador puede ingresar o escanear el ID de un ticket y ver en un único panel su estado de ciclo de vida,
+categoría, bloque y coordenada de acceso. Tickets inexistentes muestran error 404 claro.
 
-**Independent Test**: Ingresar un ID de ticket válido y vendido muestra resultado verde "ACCESO EXITOSO" con nombre del asistente y zona. Un ticket ya USADO muestra amarillo "REINGRESO". Un ticket CANCELADO muestra rojo "ACCESO DENEGADO".
+**Independent Test**: Ingresar un ID válido muestra `ResultadoTicketCard` con estado VENDIDO, categoría VIP, bloque A.
+Ingresar un ID inválido muestra "Ticket no encontrado". Ingresar un ticket ANULADO muestra alerta roja.
 
-### Tests para User Story 2
+- [ ] T005 [US1+US2] Implementar `useConsultarTicket.ts` con `useQuery`: `staleTime: 0` y `gcTime: 0` para
+  garantizar siempre datos frescos; en `onSuccess` guarda el resultado en `accesoStore`
+- [ ] T006 [US1+US2] Implementar `EstadoAccesoBadge.tsx`: badge de color según `EstadoTicketAcceso` (verde para
+  VENDIDO, rojo para CANCELADO/ANULADO, amarillo para RESERVADO)
+- [ ] T007 [US1+US2] Implementar `ResultadoTicketCard.tsx`: muestra ticketId, estado (badge grande), categoría,
+  bloque, coordenadaAcceso, eventoId y fechaEvento formateada — diseño de alto contraste con texto grande
+- [ ] T008 [US1+US2] Implementar `BuscadorTicket.tsx`: input de texto para ingresar ID manualmente + botón
+  "Consultar"; diseñado para futura integración con lector de QR
+- [ ] T009 [US1+US2] Implementar `HistorialConsultasPanel.tsx`: lista las últimas 20 consultas del `accesoStore`
+  con ID, resultado (VÁLIDO/INVÁLIDO) y timestamp
+- [ ] T010 [US1+US2] Implementar `AccesoPage.tsx`: `BuscadorTicket` en posición prominente, área de resultado
+  (`ResultadoTicketCard` o mensaje de error), `HistorialConsultasPanel` colapsable
 
-- [ ] T009 [P] [US2] Test: `TicketValidationResult` renderiza verde para ticket VENDIDO — `TicketValidationResult.test.tsx`
-- [ ] T010 [P] [US2] Test: `TicketValidationResult` renderiza rojo para ticket CANCELADO — `TicketValidationResult.test.tsx`
-- [ ] T011 [P] [US2] Test: `ManualTicketInput` llama a `validarTicket` con el ID ingresado — `ManualTicketInput.test.tsx`
-- [ ] T012 [P] [US2] Test: `useValidarTicket` añade la validación al historial del store — `accessStore.test.ts`
-
-### Implementación de User Story 2
-
-- [ ] T013 [US2] Implementar `useValidarTicket.ts` con `useMutation`: llama a `accesoService.validarTicket`, en `onSuccess` llama a `addValidation(record)` en el store
-- [ ] T014 [US2] Implementar `AccessStatusBadge.tsx`: icono + texto grande (EXITOSO verde, DENEGADO rojo, REINGRESO amarillo)
-- [ ] T015 [US2] Implementar `TicketValidationResult.tsx`: panel full-screen o card grande con `AccessStatusBadge`, zona, fila/columna, duración visible 3 segundos antes de resetear
-- [ ] T016 [US2] Implementar `QRScanner.tsx`: integra `html5-qrcode` o `@zxing/browser` para leer QR de la cámara; al detectar llama a `validarTicket` — // TODO: verificar compatibilidad con cámara de dispositivo
-- [ ] T017 [US2] Implementar `ManualTicketInput.tsx`: input de texto + botón "Validar", submit con Enter
-- [ ] T018 [US2] Implementar `ValidationHistoryList.tsx`: lista de las últimas 10 validaciones de la sesión con resultado y timestamp
-- [ ] T019 [US2] Implementar `GateValidationPage.tsx`: layout mobile-first con tabs "Escanear QR" / "Manual", `TicketValidationResult` en overlay al validar, `ValidationHistoryList` debajo
-
-**Checkpoint**: Validación de tickets funcional en ambos modos
+**Checkpoint**: Consulta de estado funcional con resultado completo en pantalla
 
 ---
 
-## Phase 4: Polish & Cross-Cutting Concerns
+## Phase 3: User Story 3 — Metadatos de Evento en la Respuesta (Priority: P2)
 
-- [ ] T020 Interfaz mobile-first: botones grandes, fuente grande, resultado visible desde distancia
-- [ ] T021 Vibración del dispositivo al validar (`navigator.vibrate`) — éxito: vibración corta; error: vibración larga
-- [ ] T022 Modo de alto contraste para exteriores con luz solar
-- [ ] T023 Modo offline básico: si no hay red, mostrar mensaje claro "Sin conexión — validación no disponible"
-- [ ] T024 Limpiar historial de sesión al cambiar de compuerta
+**Goal**: La tarjeta del ticket muestra `eventoId` y `fechaEvento` para que el operador detecte tickets de eventos
+distintos al actual.
+
+**Independent Test**: Un ticket de un evento anterior muestra la fecha del evento original en la tarjeta, diferente
+al evento activo. El operador puede ver que el ticket no corresponde al evento en curso.
+
+- [ ] T011 [US3] Actualizar `ResultadoTicketCard.tsx`: confirmar que ya muestra `eventoId` y `fechaEvento`;
+  agregar indicador visual si la `fechaEvento` es anterior a hoy (sesión inválida)
+
+**Checkpoint**: Metadatos de evento visibles con alerta de sesión inválida
+
+---
+
+## Phase 4: Estructura del Recinto (Priority: P2)
+
+**Goal**: El operador puede consultar la estructura completa del recinto (bloques, categorías, coordenadas de acceso)
+para orientarse en el venue.
+
+**Independent Test**: Navegar a `/acceso/recinto/:id` muestra la tabla de bloques con categoría y coordenada.
+Recinto inexistente muestra error 404.
+
+- [ ] T012 Implementar `useRecintoEstructuraAcceso.ts` con `useQuery`
+- [ ] T013 Implementar `EstructuraRecintoTable.tsx`: tabla con columnas categoría y coordenada de acceso por bloque
+- [ ] T014 Implementar `EstructuraRecintoPage.tsx`: carga y muestra `EstructuraRecintoTable`
+
+**Checkpoint**: Consulta de estructura del recinto funcional
+
+---
+
+## Phase 5: Polish & Cross-Cutting Concerns
+
+- [ ] T015 Configurar `staleTime: 0` globalmente para los hooks de acceso — nunca servir datos cacheados
+- [ ] T016 Optimizar la UI para pantallas táctiles: targets de al menos 44px, texto mínimo 16px
+- [ ] T017 Manejar estado de carga con skeleton de tamaño fijo para evitar layout shift al responder la consulta
+- [ ] T018 Confirmar que `accesoStore` persiste el historial en `localStorage` para acceso offline
 
 ---
 
 ## Dependencies & Execution Order
 
-- **Foundational (Phase 1)**: Depende de planes 001 y 004 completados
-- **US1 (Phase 2)**: Depende de Foundational
-- **US2 (Phase 3)**: Depende de US1 (compuerta activa requerida para validar)
-- **Polish (Phase 4)**: Depende de todo
+### Phase Dependencies
+
+- **Foundational (Phase 1)**: Depende de los features 001 y 004 completados
+- **US1+US2 (Phase 2)**: Depende de Foundational
+- **US3 (Phase 3)**: Depende de Phase 2 — extiende `ResultadoTicketCard`
+- **Estructura (Phase 4)**: Depende de Foundational — puede ejecutarse en paralelo con Phases 2 y 3
+- **Polish (Phase 5)**: Depende de todas las fases
+
+### Dentro de cada User Story
+
+- Tipos y servicio antes que hooks
+- Hooks antes que componentes y páginas
+- Verificar checkpoint antes de pasar a la siguiente fase
 
 ---
 
 ## Notes
 
-- **QR Scanner**: la librería `html5-qrcode` requiere HTTPS en producción para acceder a la cámara — en desarrollo usar `ManualTicketInput` como fallback
-- **Sin autenticación propia**: este módulo no tiene login — se asume que el operador accede desde una URL interna/tablet dedicada; agregar PIN simple si se requiere protección básica
-- **Resultado temporal**: el componente `TicketValidationResult` se muestra 3 segundos (o hasta próximo scan) para dar tiempo al operador de ver el resultado con claridad
-- **Historial local**: el historial de validaciones es solo en memoria (Zustand) — no persiste entre sesiones, no se envía al servidor
-
+- **Sin caché**: usar `staleTime: 0` y `gcTime: 0` en todos los hooks de este feature — el estado de un ticket puede
+  cambiar en milisegundos durante el ingreso al evento
+- **Historial local**: el historial en `accesoStore` es de solo lectura y persiste en `localStorage`; si el operador
+  cierra el navegador, el historial se conserva
+- **Lector de QR**: el `BuscadorTicket` está diseñado para recibir el ID como texto; cuando se integre un lector de
+  QR físico, el input recibirá el escaneo como un keydown event seguido de Enter — el componente ya maneja eso si el
+  input tiene autofocus
+- **Sesión inválida**: mostrar alerta visible cuando `fechaEvento` difiere del evento activo — el operador debe poder
+  identificar inmediatamente un ticket del día equivocado
