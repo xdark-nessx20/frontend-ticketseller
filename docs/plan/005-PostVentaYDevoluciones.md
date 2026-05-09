@@ -1,246 +1,270 @@
 # Implementation Plan: Post-Venta y Devoluciones – Frontend
 
-**Date**: 09/05/2026  
-**Specs**:
-
-- [005-PostVentaYDevoluciones.md](/docs/plan/005-PostVentaYDevoluciones.md)
+**Date**: 09/05/2026
 
 ## Summary
 
-El **Comprador** debe poder consultar sus tickets, cancelar entradas individuales o en grupo, y hacer seguimiento del estado de sus reembolsos. El **Administrador** debe poder procesar reembolsos manuales, cambiar el estado de tickets individuales y disparar el procesamiento de la cola de reembolsos pendientes.
+El sistema debe permitir a los **Compradores** cancelar tickets de forma individual o parcial desde su sección "Mis
+Compras" y consultar el estado de sus reembolsos. Los **Agentes de Ventas** disponen de un panel administrativo para
+gestionar estados de tickets manualmente y procesar reembolsos totales o parciales con trazabilidad completa.
 
-Este módulo expone dos secciones: el portal del comprador ("Mis Tickets") y el panel de administración de post-venta. El portal del comprador es de lectura/acción limitada; el panel admin tiene controles completos de estado y reembolsos.
-
-Depende del plan 004 completado (los tickets existen porque se compraron).
+Este módulo tiene dos audiencias distintas: la vista del comprador (portal público) y el panel del agente (admin).
+Ambas vistas comparten los mismos tipos y servicio pero difieren en páginas y permisos. Depende del feature 004
+(tickets y ventas deben existir).
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x  
-**Framework**: React 18+ (Vite)  
-**Styling**: Tailwind CSS 3.x  
-**Server State**: TanStack Query v5  
-**Client State**: Zustand  
-**HTTP Client**: Axios  
-**Router**: React Router v6  
-**Testing**: Vitest + React Testing Library + MSW  
-**Target Platform**: Customer Portal + Admin Panel SPA  
-**Performance Goals**: Listado de mis tickets carga en menos de 1s.  
-**Constraints**: Un ticket VENDIDO solo puede cancelarse si el evento no está EN_PROGRESO o FINALIZADO. Los reembolsos automáticos los procesa el backend — el frontend solo muestra el estado. El reembolso manual requiere monto y agente.  
-**Scale/Scope**: Feature post-compra — depende de plan 004.
+**Language/Version**: TypeScript 5.x
+**Framework**: React 18+ (Vite)
+**Styling**: Tailwind CSS 3.x
+**Server State**: TanStack Query v5
+**Client State**: Zustand (selección de tickets para cancelación parcial)
+**HTTP Client**: Axios
+**Router**: React Router v6
+**Target Platform**: Buyer Portal SPA + Admin Panel SPA
+**Performance Goals**: Cancelación procesada y reflejada en UI en menos de 2s.
+**Constraints**: No cancelar tickets ya usados. No cancelar si el evento ya ocurrió (salvo override del agente). 0
+tickets cancelados que luego sean usados.
+**Scale/Scope**: Extiende el feature 004 — `Ticket`, `Venta` y pasarela de pagos deben existir.
+
+## TypeScript Types
+
+> Estos tipos deben mantenerse alineados con los DTOs del backend. Cualquier cambio en los contratos de la API debe
+> reflejarse aquí primero.
+
+### Enums
+
+```typescript
+type EstadoReembolso = 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO' | 'FALLIDO';
+type TipoReembolso = 'TOTAL' | 'PARCIAL';
+// EstadoTicket se importa desde checkout.types.ts (feature 004)
+```
+
+### Interfaces de Respuesta
+
+```typescript
+interface ReembolsoResponse {
+  reembolsoId: string;
+  estado: EstadoReembolso;
+  monto: number;
+  agenteId: string | null;
+  fechaCompletado: string | null;   // ISO 8601
+}
+
+interface CancelacionResponse {
+  ticketsCancelados: number;
+  reembolsoId: string;
+  montoPendiente: number;
+}
+
+interface TicketConReembolsoResponse {
+  id: string;
+  ventaId: string;
+  eventoId: string;
+  zonaId: string;
+  estado: string;                   // EstadoTicket
+  precio: number;
+  esCortesia: boolean;
+  estadoReembolso: EstadoReembolso | null;
+  detalleReembolso: ReembolsoResponse | null;
+}
+```
+
+### Interfaces de Request
+
+```typescript
+interface CancelarTicketRequest {
+  ticketIds: string[];              // min 1
+}
+
+interface CambiarEstadoTicketRequest {
+  estado: string;                   // EstadoTicket
+  justificacion: string;            // obligatorio
+}
+
+interface ReembolsoManualRequest {
+  tipo: TipoReembolso;
+  monto?: number;                   // requerido si tipo = PARCIAL
+}
+```
 
 ## Coding Standards
 
 > **⚠️ ADVERTENCIA — Reglas obligatorias de estilo de código:**
 >
-> 1. **NO crear comentarios innecesarios.**
-> 2. **Clean Code**: nombres descriptivos, componentes pequeños.
-> 3. **`interface`** para objetos, **`type`** para uniones.
-> 4. Solo componentes funcionales.
-> 5. Lógica en custom hooks.
-> 6. Solo clases Tailwind.
+> 1. **NO crear comentarios innecesarios.** El código debe ser autoexplicativo. Solo se permiten comentarios cuando
+>    aportan contexto que el código solo no puede expresar.
+> 2. **Se DEBEN respetar los principios del Clean Code.** Nombres descriptivos, componentes pequeños de responsabilidad
+>    única, sin código muerto, sin duplicación.
+> 3. **Para tipos, usar `interface` para objetos y props, `type` para uniones y primitivas.**
+> 4. **Solo componentes funcionales** — sin class components.
+> 5. **Lógica de negocio en custom hooks** — los componentes solo renderizan.
+> 6. **Sin estilos inline** — solo clases Tailwind.
 
 ## Project Structure
+
+### Archivos nuevos que agrega este feature
 
 ```text
 src/
 ├── types/
-│   └── postVenta.types.ts
+│   └── postventa.types.ts
 ├── services/
-│   ├── misComprasService.ts
-│   ├── cancelacionService.ts
-│   └── reembolsoAdminService.ts
+│   └── postVentaService.ts
 ├── hooks/
-│   └── postVenta/
-│       ├── useMisTickets.ts
+│   └── postventa/
 │       ├── useMisCompras.ts
 │       ├── useCancelarTicket.ts
-│       ├── useCancelarVarios.ts
-│       ├── useReembolsoManual.ts
-│       ├── useProcesarColaReembolsos.ts
-│       └── useCambiarEstadoTicket.ts
+│       ├── useEstadoReembolso.ts
+│       ├── useCambiarEstadoTicketAdmin.ts
+│       └── useProcesarReembolsoManual.ts
 ├── pages/
-│   └── postVenta/
-│       ├── MyTicketsPage.tsx
-│       ├── TicketDetailPage.tsx
-│       ├── AdminRefundPage.tsx
-│       └── AdminTicketManagePage.tsx
+│   └── postventa/
+│       ├── MisComprasPage.tsx
+│       └── AdminReembolsosPage.tsx
 └── components/
-    └── postVenta/
-        ├── TicketCard.tsx
-        ├── QRCodeDisplay.tsx
-        ├── CancellationModal.tsx
-        ├── RefundStatusBadge.tsx
-        ├── AdminRefundForm.tsx
-        └── TicketStateChangeModal.tsx
-
-src/__tests__/
-└── postVenta/
-    ├── TicketCard.test.tsx
-    ├── CancellationModal.test.tsx
-    ├── AdminRefundForm.test.tsx
-    └── QRCodeDisplay.test.tsx
+    └── postventa/
+        ├── TicketCompraCard.tsx
+        ├── ReembolsoBadge.tsx
+        ├── CancelarTicketModal.tsx
+        ├── CambiarEstadoTicketModal.tsx
+        └── ReembolsoManualModal.tsx
 ```
 
 ---
 
-## Phase 1: Foundational
+## Phase 1: Foundational (Blocking Prerequisites)
 
-- [ ] T001 Definir interfaces en `postVenta.types.ts`:
-  - `TicketResponse` (id, ventaId, asientoId, numeroTicket, codigoQr, estado, tipoCategoria, precio)
-  - `TicketConReembolsoResponse` (ticket + reembolso asociado)
-  - `CancelacionResponse` (ticketId, estado, montoReembolso, estimadoFecha)
-  - `ReembolsoResponse` (id, ticketId, tipo, monto, estado, motivo)
-  - `ReembolsoManualRequest` (tipo, monto, agenteId)
-  - `CambiarEstadoTicketRequest` (estado, justificacion, agenteId)
-  - Enums: `EstadoTicket`, `EstadoReembolso`, `TipoReembolso`
-- [ ] T002 Implementar `misComprasService.ts`:
-  - `getMisTickets(compradorId)` — GET `/api/v1/compras/mis-tickets`
-  - `getMisCompras(compradorId)` — GET `/api/v1/compras/mis-compras`
-- [ ] T003 Implementar `cancelacionService.ts`:
-  - `cancelarTicket(ticketId)` — DELETE `/api/v1/tickets/{id}/cancelar`
-  - `cancelarVarios(ticketIds)` — DELETE `/api/v1/tickets/cancelar-varios`
-- [ ] T004 Implementar `reembolsoAdminService.ts`:
-  - `reembolsoManual(ticketId, data)` — POST `/api/v1/admin/tickets/{id}/reembolso`
-  - `procesarColaReembolsos()` — POST `/api/v1/admin/reembolsos/procesar-cola`
-  - `cambiarEstadoTicket(ticketId, data)` — PATCH `/api/v1/admin/tickets/{id}/estado`
-- [ ] T005 Definir rutas: `/mis-tickets`, `/mis-tickets/:ticketId`, `/admin/reembolsos`, `/admin/tickets`
+**Purpose**: Tipos TypeScript y servicio — base compartida por las vistas del comprador y del agente.
 
-**Checkpoint**: Tipos y servicios compilando
+**⚠️ CRITICAL**: Depende del feature 004 completado — `Ticket` y `Venta` deben existir.
+
+- [ ] T001 Definir interfaces en `postventa.types.ts`:
+    - `ReembolsoResponse`, `CancelacionResponse`, `TicketConReembolsoResponse`
+    - `CancelarTicketRequest`, `CambiarEstadoTicketRequest`, `ReembolsoManualRequest`
+    - Enums: `EstadoReembolso`, `TipoReembolso`
+- [ ] T002 Implementar `postVentaService.ts`:
+    - `getMisCompras()` → `GET /api/compras/mis-compras`
+    - `cancelarTickets(data)` → `POST /api/tickets/cancelar-parcial`
+    - `getEstadoReembolso(ticketId)` → lectura desde `TicketConReembolsoResponse`
+    - `cambiarEstadoTicket(ticketId, data)` → `PATCH /api/admin/tickets/{id}/estado`
+    - `procesarReembolso(ticketId, data)` → `POST /api/admin/tickets/{id}/reembolso`
+- [ ] T003 Definir rutas: `/mis-compras`, `/admin/reembolsos`
+
+**Checkpoint**: Tipos definidos, servicio compilando
 
 ---
 
-## Phase 2: User Story 1 — Mis Tickets (Priority: P1)
+## Phase 2: User Story 1 — Cancelación de Ticket por el Comprador (Priority: P1)
 
-**Goal**: El comprador puede ver todos sus tickets con su estado y acceder al detalle con el código QR.
+**Goal**: El comprador puede ver sus tickets en "Mis Compras" y cancelar uno o varios seleccionados. Tickets ya
+usados o de eventos pasados no pueden cancelarse. Al cancelar, se crea un reembolso en cola.
 
-**Independent Test**: Navegar a `/mis-tickets` muestra grid de tickets. Hacer clic en uno abre el detalle con QR, nombre del evento, zona, fila/columna y estado.
+**Independent Test**: Navegar a `/mis-compras` muestra los tickets agrupados por evento. Seleccionar 2 tickets y
+hacer clic en "Cancelar seleccionados" muestra modal de confirmación. Confirmar cambia el estado a "CANCELADO" y
+muestra el monto de reembolso pendiente.
 
-### Tests para User Story 2
+- [ ] T004 [US1] Implementar `useMisCompras.ts` con `useQuery`
+- [ ] T005 [US1] Implementar `useCancelarTicket.ts` con `useMutation`: invalida `['misCompras']` en `onSuccess`
+- [ ] T006 [US1] Implementar `ReembolsoBadge.tsx`: badge de color según `EstadoReembolso`
+- [ ] T007 [US1] Implementar `TicketCompraCard.tsx`: muestra datos del ticket, badge de estado, badge de reembolso
+  si aplica, checkbox para selección múltiple
+- [ ] T008 [US1] Implementar `CancelarTicketModal.tsx`: lista los tickets seleccionados con sus precios, muestra
+  total a reembolsar, botones cancelar/confirmar
+- [ ] T009 [US1] Implementar `MisComprasPage.tsx`: usa `useMisCompras`, agrupa tickets por evento, botón "Cancelar
+  seleccionados" visible solo cuando hay selección activa
 
-- [ ] T006 [P] [US1] Test: `TicketCard` renderiza nombre evento, zona y estado badge — `TicketCard.test.tsx`
-- [ ] T007 [P] [US1] Test: `QRCodeDisplay` renderiza imagen cuando recibe base64 — `QRCodeDisplay.test.tsx`
-- [ ] T008 [P] [US1] Test: `MyTicketsPage` muestra mensaje vacío sin tickets — test
-
-### Implementación de User Story 1
-
-- [ ] T009 [US1] Implementar `useMisTickets.ts` con `useQuery`: usa `compradorId` del `cartStore`
-- [ ] T010 [US1] Implementar `TicketCard.tsx`: imagen placeholder, evento, zona, estado (`RefundStatusBadge`), botón "Ver"
-- [ ] T011 [US1] Implementar `QRCodeDisplay.tsx`: renderiza `<img>` con `codigoQr` base64; botón "Descargar"
-- [ ] T012 [US1] Implementar `MyTicketsPage.tsx` y `TicketDetailPage.tsx`
-
-**Checkpoint**: Vista de mis tickets y detalle funcional
-
----
-
-## Phase 3: User Story 2 — Cancelar Tickets (Priority: P2)
-
-**Goal**: El comprador puede cancelar tickets individuales o múltiples desde su lista.
-
-**Independent Test**: Clic en "Cancelar" en un ticket abre modal de confirmación. Confirmar cambia el estado del ticket a CANCELADO y muestra el monto de reembolso estimado. Si el evento está en progreso, el botón cancelar está deshabilitado.
-
-### Tests para User Story 3
-
-- [ ] T013 [P] [US2] Test: `CancellationModal` muestra monto estimado de reembolso — `CancellationModal.test.tsx`
-- [ ] T014 [P] [US2] Test: botón cancelar está deshabilitado si `evento.estado === 'EN_PROGRESO'` — `TicketCard.test.tsx`
-- [ ] T015 [P] [US2] Test: `useCancelarTicket` invalida `['mis-tickets']` en `onSuccess`
-
-### Implementación de User Story 2
-
-- [ ] T016 [US2] Implementar `useCancelarTicket.ts` y `useCancelarVarios.ts`
-- [ ] T017 [US2] Implementar `CancellationModal.tsx`: aviso de política de reembolso, monto estimado, botones cancelar/confirmar
-- [ ] T018 [US2] Integrar modal y lógica de deshabilitado en `TicketCard.tsx` y `MyTicketsPage.tsx`
-
-**Checkpoint**: Cancelación de tickets funcional
+**Checkpoint**: Vista de mis compras funcional con cancelación individual y parcial
 
 ---
 
-## Phase 4: User Story 3 — Seguimiento de Reembolso (Priority: P2)
+## Phase 3: User Story 5 — Consulta de Estado de Reembolso (Priority: P2)
 
-**Goal**: El comprador puede ver el estado actual de sus reembolsos desde la lista de mis compras.
+**Goal**: El comprador puede ver el estado de su reembolso en "Mis Compras". Al completarse, el badge cambia a
+"COMPLETADO".
 
-**Independent Test**: Navegar a `/mis-tickets` en tab "Cancelados/Reembolsados" muestra tickets con `RefundStatusBadge` (PENDIENTE/EN_PROCESO/COMPLETADO). Cada ticket muestra el monto y la fecha estimada.
+**Independent Test**: Un ticket cancelado muestra `ReembolsoBadge` con estado "PENDIENTE". Tras procesarse, el badge
+cambia a "COMPLETADO" al recargar la página.
 
-### Tests para User Story 4
+- [ ] T010 [US5] Implementar `useEstadoReembolso.ts`: lee el estado desde el campo `detalleReembolso` del
+  `TicketConReembolsoResponse` ya cargado por `useMisCompras` — no requiere llamada adicional
+- [ ] T011 [US5] Actualizar `TicketCompraCard.tsx`: mostrar `detalleReembolso.estado` y `detalleReembolso.monto`
+  cuando `estadoReembolso` no es null
 
-- [ ] T019 [P] [US3] Test: `RefundStatusBadge` renderiza color correcto por estado — test
-- [ ] T020 [P] [US3] Test: `useMisCompras` retorna tickets con reembolso — test
-
-### Implementación de User Story 3
-
-- [ ] T021 [US3] Implementar `useMisCompras.ts`
-- [ ] T022 [US3] Implementar `RefundStatusBadge.tsx`: badge colorido PENDIENTE/EN_PROCESO/COMPLETADO/RECHAZADO
-- [ ] T023 [US3] Agregar tab "Cancelados" en `MyTicketsPage.tsx` que usa `useMisCompras`
-
-**Checkpoint**: Seguimiento de reembolsos funcional para el comprador
+**Checkpoint**: Estado de reembolso visible al comprador
 
 ---
 
-## Phase 5: User Story 4 — Admin: Reembolso Manual (Priority: P1)
+## Phase 4: User Story 3 — Cambio Manual de Estado de Ticket por el Agente (Priority: P2)
 
-**Goal**: El administrador puede procesar un reembolso manual para un ticket específico.
+**Goal**: El Agente de Ventas puede cambiar el estado de un ticket con justificación obligatoria. El cambio queda
+registrado en historial de auditoría.
 
-**Independent Test**: En `/admin/reembolsos`, buscar un ticket por ID, ingresar monto, tipo y ID del agente, confirmar — el estado del ticket cambia a REEMBOLSO_PENDIENTE.
+**Independent Test**: Desde el panel de admin, buscar un ticket y hacer clic en "Cambiar Estado". Seleccionar "ANULADO"
+requiere ingresar justificación. Confirmar actualiza el badge del ticket.
 
-### Tests para User Story 5
+- [ ] T012 [US3] Implementar `useCambiarEstadoTicketAdmin.ts` con `useMutation`
+- [ ] T013 [US3] Implementar `CambiarEstadoTicketModal.tsx`: select de estado destino, campo justificación
+  obligatorio (Zod `min(1)`), botones cancelar/confirmar
+- [ ] T014 [US3] Integrar el modal en la vista de detalle de ticket del panel de admin
 
-- [ ] T024 [P] [US4] Test: `AdminRefundForm` valida monto positivo y agente no vacío — `AdminRefundForm.test.tsx`
-- [ ] T025 [P] [US4] Test: `useReembolsoManual` invalida queries correctas en `onSuccess`
-
-### Implementación de User Story 4
-
-- [ ] T026 [US4] Implementar `useReembolsoManual.ts` y `useProcesarColaReembolsos.ts`
-- [ ] T027 [US4] Implementar `AdminRefundForm.tsx`: select de tipo, input de monto, input de agenteId, validación Zod
-- [ ] T028 [US4] Implementar `AdminRefundPage.tsx`: búsqueda de ticket + formulario de reembolso + botón "Procesar Cola"
-
-**Checkpoint**: Reembolso manual admin funcional
+**Checkpoint**: Cambio manual de estado funcional con justificación obligatoria
 
 ---
 
-## Phase 6: User Story 5 — Admin: Cambiar Estado de Ticket (Priority: P1)
+## Phase 5: User Story 4 — Gestión de Reembolsos por Soporte (Priority: P2)
 
-**Goal**: El administrador puede cambiar manualmente el estado de un ticket con justificación.
+**Goal**: El Agente de Ventas puede procesar reembolsos manuales totales o parciales y ver la cola de reembolsos
+pendientes.
 
-**Independent Test**: Abrir modal de cambio de estado, seleccionar ANULADO, ingresar justificación y agente, confirmar — ticket actualizado en la lista.
+**Independent Test**: Desde `/admin/reembolsos`, ver la lista de reembolsos PENDIENTES. Hacer clic en "Procesar
+Total" sobre uno muestra confirmación. Confirmar cambia el estado a "COMPLETADO".
 
-### Tests para User Story 6
+- [ ] T015 [US4] Implementar `useProcesarReembolsoManual.ts` con `useMutation`
+- [ ] T016 [US4] Implementar `ReembolsoManualModal.tsx`: radio buttons TOTAL/PARCIAL, input de monto visible solo
+  si PARCIAL (validación `min(0.01)`), botón confirmar
+- [ ] T017 [US4] Implementar `AdminReembolsosPage.tsx`: tabla con reembolsos PENDIENTES, columnas ticket, monto,
+  fecha solicitud, botón "Procesar" abre `ReembolsoManualModal`
 
-- [ ] T029 [P] [US5] Test: `TicketStateChangeModal` valida justificación no vacía — test
-- [ ] T030 [P] [US5] Test: `useCambiarEstadoTicket` invalida queries en `onSuccess`
-
-### Implementación de User Story 5
-
-- [ ] T031 [US5] Implementar `useCambiarEstadoTicket.ts`
-- [ ] T032 [US5] Implementar `TicketStateChangeModal.tsx`: select de estado (todos), textarea justificación, input agenteId
-- [ ] T033 [US5] Implementar `AdminTicketManagePage.tsx`: tabla de tickets con filtros + modal de cambio de estado
-
-**Checkpoint**: Gestión admin de tickets funcional
+**Checkpoint**: Panel de reembolsos funcional con procesamiento manual
 
 ---
 
-## Phase 7: Polish & Cross-Cutting Concerns
+## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T034 Agregar toast de éxito/error después de cancelación y reembolso
-- [ ] T035 Botón "Descargar todos mis tickets como PDF" en `MyTicketsPage` (// TODO: librería PDF)
-- [ ] T036 Revisar accesibilidad de modales (focus trap, esc para cerrar)
-- [ ] T037 Verificar tipos contra OpenAPI del backend
+- [ ] T018 Agregar estado vacío en `MisComprasPage` cuando el comprador no tiene compras
+- [ ] T019 Deshabilitar checkbox de cancelación para tickets en estados no cancelables (USADO, ANULADO)
+- [ ] T020 Mostrar aviso en `CancelarTicketModal` cuando el evento ya ocurrió (error 422 del backend)
+- [ ] T021 Verificar que `ReembolsoBadge` es visualmente consistente con los demás badges del sistema
 
 ---
 
 ## Dependencies & Execution Order
 
-- **Foundational (Phase 1)**: Depende de plan 004 completado
+### Phase Dependencies
+
+- **Foundational (Phase 1)**: Depende del feature 004 completado
 - **US1 (Phase 2)**: Depende de Foundational
-- **US2 (Phase 3)**: Depende de US1 (`TicketCard`)
-- **US3 (Phase 4)**: Depende de Foundational — independiente de US2
-- **US4 (Phase 5)**: Depende de Foundational — panel admin independiente
-- **US5 (Phase 6)**: Depende de Foundational
-- **Polish (Phase 7)**: Depende de todo
+- **US5 (Phase 3)**: Depende de US1 (datos de reembolso vienen con `useMisCompras`)
+- **US3 (Phase 4)**: Depende de Foundational — puede ejecutarse en paralelo con US1
+- **US4 (Phase 5)**: Depende de US1 — necesita reembolsos en PENDIENTE para procesarlos
+- **Polish (Phase 6)**: Depende de todas las user stories
+
+### Dentro de cada User Story
+
+- Tipos y servicio antes que hooks
+- Hooks antes que páginas y componentes
+- Verificar checkpoint antes de pasar a la siguiente fase
 
 ---
 
 ## Notes
 
-- **compradorId**: igual que plan 004, se obtiene del `cartStore` o de la sesión del usuario
-- **Tabs en MyTicketsPage**: usar query param `?tab=activos|cancelados` para que los tabs sean bookmarkeables
-- **Descarga de QR**: `window.open(imgSrc)` o crear un `<a download>` temporal con el base64
-
+- **Separación de vistas**: las rutas `/mis-compras` son del portal del comprador; `/admin/reembolsos` y
+  `/admin/tickets/:id` son del panel del agente — proteger con guards de rol correspondientes
+- **Cancelación parcial**: `CancelarTicketRequest.ticketIds` puede tener un solo elemento (cancelación individual)
+  o varios (cancelación parcial) — usar el mismo endpoint en ambos casos
+- **Estado ya calculado**: `TicketConReembolsoResponse` incluye `estadoReembolso` y `detalleReembolso` directamente
+  — no hacer una segunda llamada para obtener el reembolso
+- **Reembolso masivo por evento cancelado**: lo dispara el backend automáticamente cuando se cancela un evento —
+  el frontend solo necesita reflejar los cambios de estado en la siguiente carga

@@ -1,293 +1,318 @@
 # Implementation Plan: Gestión de Eventos – Frontend
 
-**Date**: 09/05/2026  
-**Specs**:
-
-- [012-GestionDeEventos.md](/docs/plan/012-GestionDeEventos.md)
+**Date**: 09/05/2026
 
 ## Summary
 
-El **Administrador** debe poder registrar nuevos eventos asociados a recintos existentes, listar y filtrar eventos por estado, editar sus datos, gestionar su ciclo de vida (activar → iniciar → finalizar / cancelar), configurar precios por zona, y ver el listado de reembolsos generados por la cancelación de un evento.
+El **Promotor de Eventos** debe poder registrar nuevos eventos asignándolos a un recinto, configurar
+los precios de entradas por zona, editar la información del evento y cancelarlo con justificación
+obligatoria. `Evento` es la entidad central que conecta el inventario (feature 002) con la venta de
+tickets (feature 004): sin un evento activo y con precios configurados no puede haber compras.
 
-Este módulo es el núcleo de la operación de eventos. Es prerequisito del plan 004 (checkout) y del plan 010 (campañas), ya que los eventos necesitan existir y tener precios configurados antes de que los compradores puedan adquirir tickets.
-
-Depende del plan 001 completado (recintos y zonas existen para asociar el evento).
+Este módulo opera exclusivamente desde el panel de administración. Depende del feature 001 (recintos)
+y feature 002 (zonas). Bloquea los features 004 (checkout) y 011 (liquidación).
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x  
-**Framework**: React 18+ (Vite)  
-**Styling**: Tailwind CSS 3.x  
-**Server State**: TanStack Query v5  
-**Client State**: Zustand  
-**HTTP Client**: Axios  
-**Router**: React Router v6  
-**Testing**: Vitest + React Testing Library + MSW  
-**Target Platform**: Admin Panel SPA  
-**Performance Goals**: Listado de eventos carga en menos de 1s. Formulario de creación responde en menos de 500ms.  
-**Constraints**: No se puede editar un evento CANCELADO o FINALIZADO. Los precios deben configurarse antes de que el evento sea visible para compradores. La cancelación requiere motivo obligatorio. El evento no puede iniciarse si no tiene precios configurados.  
-**Scale/Scope**: Módulo central del sistema — prerequisito de checkout y campañas.
+**Language/Version**: TypeScript 5.x
+**Framework**: React 18+ (Vite)
+**Styling**: Tailwind CSS 3.x
+**Server State**: TanStack Query v5
+**Client State**: Zustand (filtros del listado de eventos)
+**HTTP Client**: Axios
+**Router**: React Router v6
+**Target Platform**: Admin Panel SPA
+**Performance Goals**: Registro de evento en menos de 3s. Panel de eventos carga en menos de 2s.
+**Constraints**: No se permite borrado físico de eventos. No editar eventos EN_PROGRESO. Cancelación
+requiere justificación obligatoria. 0 eventos solapados en mismo recinto (detectado por backend con
+HTTP 409).
+**Scale/Scope**: Entidad central del sistema — bloquea features 004 y 011. Depende de features 001
+y 002.
+
+## TypeScript Types
+
+> Estos tipos deben mantenerse alineados con los DTOs del backend. Cualquier cambio en los contratos de la API debe
+> reflejarse aquí primero.
+
+### Enums
+
+```typescript
+type EstadoEvento = 'ACTIVO' | 'EN_PROGRESO' | 'FINALIZADO' | 'CANCELADO';
+type TipoEvento = string;          // valor libre definido por el promotor (concierto, teatro, etc.)
+```
+
+### Interfaces de Respuesta
+
+```typescript
+interface EventoResponse {
+  id: string;
+  nombre: string;
+  fechaInicio: string;             // ISO 8601
+  fechaFin: string;                // ISO 8601
+  tipo: TipoEvento;
+  recintoId: string;
+  estado: EstadoEvento;
+  motivoCancelacion: string | null;
+}
+
+interface PrecioZonaResponse {
+  id: string;
+  eventoId: string;
+  zonaId: string;
+  zonaNombre: string;
+  precio: number;
+}
+```
+
+### Interfaces de Request
+
+```typescript
+interface CrearEventoRequest {
+  nombre: string;
+  fechaInicio: string;             // ISO 8601
+  fechaFin: string;                // ISO 8601
+  tipo: string;
+  recintoId: string;
+}
+
+interface EditarEventoRequest {
+  nombre?: string;
+  fechaInicio?: string;            // ISO 8601
+  fechaFin?: string;               // ISO 8601
+  tipo?: string;
+}
+
+interface CancelarEventoRequest {
+  estado: 'CANCELADO';
+  motivo: string;                  // obligatorio
+}
+
+interface PrecioZonaRequest {
+  zonaId: string;
+  precio: number;                  // positivo
+}
+
+interface ConfigurarPreciosRequest {
+  precios: PrecioZonaRequest[];    // debe incluir todas las zonas del recinto
+}
+
+interface EventoFiltros {
+  estado?: EstadoEvento;
+}
+```
 
 ## Coding Standards
 
 > **⚠️ ADVERTENCIA — Reglas obligatorias de estilo de código:**
 >
-> 1. **NO crear comentarios innecesarios.**
-> 2. **Clean Code**: nombres descriptivos, componentes pequeños.
-> 3. **`interface`** para objetos, **`type`** para uniones.
-> 4. Solo componentes funcionales.
-> 5. Lógica en custom hooks.
-> 6. Solo clases Tailwind.
+> 1. **NO crear comentarios innecesarios.** El código debe ser autoexplicativo. Solo se permiten comentarios cuando
+>    aportan contexto que el código solo no puede expresar.
+> 2. **Se DEBEN respetar los principios del Clean Code.** Nombres descriptivos, componentes pequeños de responsabilidad
+>    única, sin código muerto, sin duplicación.
+> 3. **Para tipos, usar `interface` para objetos y props, `type` para uniones y primitivas.**
+> 4. **Solo componentes funcionales** — sin class components.
+> 5. **Lógica de negocio en custom hooks** — los componentes solo renderizan.
+> 6. **Sin estilos inline** — solo clases Tailwind.
 
 ## Project Structure
+
+### Archivos nuevos que agrega este feature
 
 ```text
 src/
 ├── types/
-│   └── evento.types.ts           ← EventoResponse, CrearEventoRequest, PrecioZonaResponse, etc.
+│   └── evento.types.ts
 ├── services/
-│   ├── eventosService.ts         ← CRUD eventos, ciclo de vida, reembolsos
-│   └── preciosService.ts         ← configurar y listar precios de evento
+│   └── eventoService.ts
 ├── stores/
-│   └── eventosStore.ts           ← Zustand: filtros activos del listado
+│   └── eventosStore.ts
 ├── hooks/
 │   └── eventos/
 │       ├── useEventos.ts
 │       ├── useEvento.ts
-│       ├── useCreateEvento.ts
-│       ├── useEditEvento.ts
+│       ├── useCrearEvento.ts
+│       ├── useEditarEvento.ts
 │       ├── useCancelarEvento.ts
-│       ├── useIniciarEvento.ts
-│       ├── useFinalizarEvento.ts
-│       ├── usePreciosEvento.ts
-│       ├── useConfigurarPrecios.ts
-│       └── useReembolsosEvento.ts
+│       ├── usePreciosZona.ts
+│       └── useConfigurarPrecios.ts
 ├── pages/
 │   └── eventos/
-│       ├── EventListPage.tsx
-│       ├── EventDetailPage.tsx
-│       ├── CreateEventPage.tsx
-│       ├── EditEventPage.tsx
-│       ├── PriceConfigurationPage.tsx
-│       └── EventRefundsPage.tsx
+│       ├── EventosPage.tsx
+│       └── EventoDetallePage.tsx
 └── components/
     └── eventos/
-        ├── EventTable.tsx
-        ├── EventCard.tsx
-        ├── EventFilters.tsx
-        ├── EventForm.tsx
-        ├── EventStatusBadge.tsx
-        ├── EventLifecycleActions.tsx
-        ├── CancelEventModal.tsx
-        ├── PriceTable.tsx
-        └── ZonePriceRow.tsx
-
-src/__tests__/
-└── eventos/
-    ├── EventTable.test.tsx
-    ├── EventForm.test.tsx
-    ├── EventFilters.test.tsx
-    ├── EventLifecycleActions.test.tsx
-    ├── CancelEventModal.test.tsx
-    ├── PriceTable.test.tsx
-    └── useEventos.test.ts
+        ├── EventosTable.tsx
+        ├── EventoFiltrosBar.tsx
+        ├── CrearEventoModal.tsx
+        ├── EditarEventoModal.tsx
+        ├── CancelarEventoModal.tsx
+        ├── ConfigurarPreciosModal.tsx
+        ├── PreciosZonaTable.tsx
+        └── EventoEstadoBadge.tsx
 ```
 
 ---
 
 ## Phase 1: Foundational (Blocking Prerequisites)
 
-**⚠️ CRITICAL**: Depende del plan 001 completado — recintos y zonas deben existir.
+**Purpose**: Tipos TypeScript, servicio y store de filtros — base de todas las operaciones de eventos.
+
+**⚠️ CRITICAL**: Depende de los features 001 y 002 completados. Este feature bloquea los features
+004 y 011.
 
 - [ ] T001 Definir interfaces en `evento.types.ts`:
-  - `EventoResponse` (id, recintoId, nombre, descripcion, fechaInicio, fechaFin, tipoEvento, estado, metadatos)
-  - `CrearEventoRequest` (recintoId, nombre, descripcion, fechaInicio, fechaFin, tipoEvento)
-  - `EditarEventoRequest` (nombre, descripcion, fechaInicio, fechaFin)
-  - `CancelarEventoRequest` (motivo)
-  - `PrecioZonaResponse` (id, eventoId, zonaId, nombreZona, precio)
-  - `ConfigurarPreciosRequest` (precios: { zonaId, precio }[])
-  - `ReembolsoResponse` (id, ticketId, monto, estado, motivo)
-  - `EventoFiltros` (estado, fechaInicio, fechaFin)
-  - Enums: `EstadoEvento`, `TipoEvento`
-- [ ] T002 Implementar `eventosService.ts`:
-  - `getEventos(filtros?)` — GET `/api/v1/eventos?estado=`
-  - `getEvento(id)` — GET `/api/v1/eventos/{id}`
-  - `createEvento(data)` — POST `/api/v1/eventos`
-  - `editEvento(id, data)` — PUT `/api/v1/eventos/{id}`
-  - `cancelarEvento(id, data)` — DELETE `/api/v1/eventos/{id}/cancelar`
-  - `iniciarEvento(id)` — PATCH `/api/v1/eventos/{id}/iniciar`
-  - `finalizarEvento(id)` — PATCH `/api/v1/eventos/{id}/finalizar`
-  - `getReembolsos(eventoId, page, size)` — GET `/api/v1/eventos/{id}/reembolsos`
-- [ ] T003 Implementar `preciosService.ts`:
-  - `getPrecios(eventoId)` — GET `/api/v1/eventos/{eventoId}/precios`
-  - `configurarPrecios(eventoId, data)` — POST `/api/v1/eventos/{eventoId}/precios`
-- [ ] T004 Implementar `eventosStore.ts` con Zustand: estado de filtros (estado, fechaInicio, fechaFin), acciones `setFiltro`, `resetFiltros`
-- [ ] T005 Definir rutas: `/admin/eventos`, `/admin/eventos/nuevo`, `/admin/eventos/:id`, `/admin/eventos/:id/editar`, `/admin/eventos/:id/precios`, `/admin/eventos/:id/reembolsos`
+    - `EventoResponse`, `PrecioZonaResponse`
+    - `CrearEventoRequest`, `EditarEventoRequest`, `CancelarEventoRequest`, `PrecioZonaRequest`,
+      `ConfigurarPreciosRequest`, `EventoFiltros`
+    - Enums: `EstadoEvento`
+- [ ] T002 Implementar `eventoService.ts`:
+    - `getEventos(filtros?)` → `GET /api/eventos`
+    - `getEvento(eventoId)` → `GET /api/eventos/{id}`
+    - `crearEvento(data)` → `POST /api/eventos`
+    - `editarEvento(eventoId, data)` → `PATCH /api/eventos/{id}`
+    - `cambiarEstadoEvento(eventoId, data)` → `PATCH /api/eventos/{id}/estado`
+    - `getPrecios(eventoId)` → `GET /api/eventos/{id}/precios`
+    - `configurarPrecios(eventoId, data)` → `POST /api/eventos/{id}/precios`
+- [ ] T003 Implementar `eventosStore.ts` con Zustand: filtro de estado activo (`estado?`), acciones
+  `setFiltroEstado`, `resetFiltros`
+- [ ] T004 Definir rutas: `/admin/eventos`, `/admin/eventos/:id`
 
-**Checkpoint**: Tipos, servicios y store compilando; rutas registradas
+**Checkpoint**: Tipos definidos, servicio compilando, store funcionando
 
 ---
 
-## Phase 2: User Story 1 — Crear y Listar Eventos (Priority: P1)
+## Phase 2: User Story 1 — Registro de un Evento (Priority: P1)
 
-**Goal**: El administrador puede registrar un nuevo evento y verlo en el listado.
+**Goal**: El promotor puede registrar un evento con datos mínimos asignado a un recinto disponible.
+El sistema rechaza recintos inactivos o con solapamiento de fechas.
 
-**Independent Test**: Navegar a `/admin/eventos` muestra tabla de eventos. Clic en "Nuevo Evento" abre el formulario. Completar datos (recinto, nombre, fechas, tipo) y enviar crea el evento en estado ACTIVO.
+**Independent Test**: Hacer clic en "Nuevo Evento" y completar el formulario con un recintoId válido.
+El evento aparece en la tabla con estado ACTIVO. Seleccionar un recinto inactivo muestra error 409.
+Seleccionar fechas que solapan con otro evento del mismo recinto muestra error 409 descriptivo.
 
-### Tests para User Story 1
+- [ ] T005 [US1] Implementar `useEventos.ts` y `useCrearEvento.ts` con `useQuery`/`useMutation`:
+  `useCrearEvento` invalida la lista en `onSuccess`
+- [ ] T006 [US1] Implementar `EventoEstadoBadge.tsx`: badge coloreado por `EstadoEvento`
+  (verde=ACTIVO, amarillo=EN_PROGRESO, gris=FINALIZADO, rojo=CANCELADO)
+- [ ] T007 [US1] Implementar `CrearEventoModal.tsx`: inputs nombre, tipo, date pickers
+  fechaInicio/fechaFin, select recintoId con recintos activos; manejo de error 409 (solapamiento
+  o recinto no disponible) con mensaje descriptivo
+- [ ] T008 [US1] Implementar `EventosTable.tsx`: columnas nombre, tipo, recinto, fechaInicio,
+  estado (badge), acciones (editar, configurar precios, cancelar, ver detalle)
+- [ ] T009 [US1] Implementar `EventoFiltrosBar.tsx`: select estado, botón "Nuevo Evento", botón
+  "Limpiar filtros" — lee y escribe en `eventosStore`
+- [ ] T010 [US1] Implementar `EventosPage.tsx`: usa `useEventos` con `eventosStore` para filtros,
+  renderiza `EventoFiltrosBar` + `EventosTable`
 
-- [ ] T006 [P] [US1] Test: `EventTable` renderiza filas con badge de estado — `EventTable.test.tsx`
-- [ ] T007 [P] [US1] Test: `EventForm` valida que fechaFin sea posterior a fechaInicio — `EventForm.test.tsx`
-- [ ] T008 [P] [US1] Test: `EventForm` valida recinto seleccionado — `EventForm.test.tsx`
-- [ ] T009 [P] [US1] Test: `useCreateEvento` invalida `['eventos']` en `onSuccess` — `useEventos.test.ts`
-
-### Implementación de User Story 1
-
-- [ ] T010 [US1] Implementar `useEventos.ts` con `useQuery`, clave `['eventos', filtros]`
-- [ ] T011 [US1] Implementar `useCreateEvento.ts` con `useMutation`
-- [ ] T012 [US1] Implementar `EventStatusBadge.tsx`: badge ACTIVO (azul), EN_PROGRESO (naranja), FINALIZADO (verde), CANCELADO (rojo)
-- [ ] T013 [US1] Implementar `EventForm.tsx`: select de recinto (usa `useRecintos` del plan 001), campos nombre/descripción, date-time pickers fechaInicio/fechaFin, select de tipo; validación Zod
-- [ ] T014 [US1] Implementar `EventTable.tsx`: columnas nombre, recinto, tipo, fechaInicio, estado (badge), acciones
-- [ ] T015 [US1] Implementar `EventListPage.tsx`: `EventFilters` + `EventTable` + botón "Nuevo Evento"
-- [ ] T016 [US1] Implementar `CreateEventPage.tsx`: renderiza `EventForm`, redirige a `/admin/eventos/:id/precios` en `onSuccess`
-
-**Checkpoint**: Creación y listado de eventos funcional
-
----
-
-## Phase 3: User Story 2 — Filtrar Eventos (Priority: P2)
-
-**Goal**: El administrador puede filtrar eventos por estado y rango de fechas.
-
-**Independent Test**: Seleccionar estado "EN_PROGRESO" filtra la tabla. Establecer fechaInicio y fechaFin reduce los resultados al rango.
-
-### Tests para User Story 2
-
-- [ ] T017 [P] [US2] Test: `EventFilters` actualiza el store al cambiar el select de estado — `EventFilters.test.tsx`
-- [ ] T018 [P] [US2] Test: `useEventos` pasa `estado` al servicio cuando está en el store
-
-### Implementación de User Story 2
-
-- [ ] T019 [US2] Implementar `EventFilters.tsx`: select de estado, date inputs de rango — escribe en `eventosStore`
-- [ ] T020 [US2] Actualizar `useEventos.ts` para leer filtros del store
-
-**Checkpoint**: Filtrado de eventos funcional
+**Checkpoint**: Registro y listado de eventos funcionales
 
 ---
 
-## Phase 4: User Story 3 — Editar Evento (Priority: P2)
+## Phase 3: User Story 2 — Configurar Precios por Zona (Priority: P1)
 
-**Goal**: El administrador puede editar los datos de un evento ACTIVO.
+**Goal**: El promotor puede configurar precios por zona para un evento. Todas las zonas del recinto
+deben tener precio; el backend rechaza si alguna queda sin precio.
 
-**Independent Test**: Navegar a `/admin/eventos/:id/editar` precarga el formulario. Cambiar el nombre y guardar actualiza el evento. Si el evento está CANCELADO, la página muestra "No se puede editar" en lugar del formulario.
+**Independent Test**: Hacer clic en "Configurar Precios" sobre un evento ACTIVO. El modal muestra
+las zonas del recinto con inputs de precio. Dejar una zona sin precio y confirmar muestra error 422.
+Completar todas y confirmar guarda los precios.
 
-### Tests para User Story 3
+- [ ] T011 [US2] Implementar `usePreciosZona.ts` y `useConfigurarPrecios.ts` con
+  `useQuery`/`useMutation`: `useConfigurarPrecios` invalida los precios del evento en `onSuccess`
+- [ ] T012 [US2] Implementar `PreciosZonaTable.tsx`: tabla con columnas zona y precio; modo edición
+  con inputs de precio por fila
+- [ ] T013 [US2] Implementar `ConfigurarPreciosModal.tsx`: carga las zonas del recinto del evento y
+  las precios existentes (si ya fueron configurados), inputs de precio por zona con validación
+  `min(0.01)`, aviso si alguna zona está sin precio al intentar guardar; maneja error 422
 
-- [ ] T021 [P] [US3] Test: `EditEventPage` precarga datos del evento — test
-- [ ] T022 [P] [US3] Test: formulario en modo edición está deshabilitado si estado ≠ ACTIVO
-
-### Implementación de User Story 3
-
-- [ ] T023 [US3] Implementar `useEvento.ts` y `useEditEvento.ts`
-- [ ] T024 [US3] Implementar `EditEventPage.tsx`: precarga con `useEvento`, renderiza `EventForm` con `defaultValues`; guarda estado previo para deshabilitar form si no es ACTIVO
-
-**Checkpoint**: Edición de eventos funcional
-
----
-
-## Phase 5: User Story 4 — Ciclo de Vida del Evento (Priority: P1)
-
-**Goal**: El administrador puede cancelar, iniciar y finalizar un evento desde la página de detalle.
-
-**Independent Test**: En el detalle de un evento ACTIVO: "Cancelar" abre modal con campo de motivo obligatorio. "Iniciar" cambia estado a EN_PROGRESO (solo disponible si tiene precios). "Finalizar" cambia a FINALIZADO (solo desde EN_PROGRESO).
-
-### Tests para User Story 4
-
-- [ ] T025 [P] [US4] Test: `CancelEventModal` valida que el motivo no esté vacío — `CancelEventModal.test.tsx`
-- [ ] T026 [P] [US4] Test: `EventLifecycleActions` solo muestra "Iniciar" si el estado es ACTIVO — `EventLifecycleActions.test.tsx`
-- [ ] T027 [P] [US4] Test: `EventLifecycleActions` solo muestra "Finalizar" si el estado es EN_PROGRESO — `EventLifecycleActions.test.tsx`
-
-### Implementación de User Story 4
-
-- [ ] T028 [US4] Implementar `useCancelarEvento.ts`, `useIniciarEvento.ts`, `useFinalizarEvento.ts`
-- [ ] T029 [US4] Implementar `CancelEventModal.tsx`: textarea de motivo (required), botones cancelar/confirmar
-- [ ] T030 [US4] Implementar `EventLifecycleActions.tsx`: renderiza condicionalmente los botones según el `estado` del evento — lógica: ACTIVO → [Iniciar, Cancelar]; EN_PROGRESO → [Finalizar, Cancelar]; demás → ningún botón
-- [ ] T031 [US4] Implementar `EventDetailPage.tsx`: header con datos del evento, `EventStatusBadge`, `EventLifecycleActions`, tabs para navegar a precios/reembolsos
-
-**Checkpoint**: Ciclo de vida completo funcional
+**Checkpoint**: Configuración de precios por zona funcional
 
 ---
 
-## Phase 6: User Story 5 — Configurar Precios (Priority: P1)
+## Phase 4: User Story 3 — Edición de Información de un Evento (Priority: P2)
 
-**Goal**: El administrador puede configurar el precio por zona para un evento antes de que salga a la venta.
+**Goal**: El promotor puede editar datos de un evento, excepto si está EN_PROGRESO. El sistema
+rechaza ediciones sobre eventos en progreso con mensaje claro.
 
-**Independent Test**: Navegar a `/admin/eventos/:id/precios` muestra tabla con las zonas del recinto. Ingresar precio por zona y guardar configura los precios. Una zona sin precio muestra "No configurado".
+**Independent Test**: Hacer clic en "Editar" sobre un evento ACTIVO. Cambiar el nombre y confirmar.
+El evento actualizado aparece en la tabla. Intentar editar un evento EN_PROGRESO muestra error 409
+"No se puede editar un evento en progreso".
 
-### Tests para User Story 5
+- [ ] T014 [US3] Implementar `useEditarEvento.ts` con `useMutation`: invalida el evento y la lista
+  en `onSuccess`; maneja error 409 con mensaje descriptivo
+- [ ] T015 [US3] Implementar `EditarEventoModal.tsx`: inputs precargados con los datos actuales del
+  evento; todos los campos son opcionales (edición parcial); deshabilita el botón guardar mientras
+  la mutation está pendiente
+- [ ] T016 [US3] Integrar `EditarEventoModal` en las acciones de `EventosTable`; deshabilitar el
+  botón "Editar" si el estado es EN_PROGRESO
 
-- [ ] T032 [P] [US5] Test: `PriceTable` renderiza una fila por zona del recinto — `PriceTable.test.tsx`
-- [ ] T033 [P] [US5] Test: `ZonePriceRow` valida precio positivo antes de guardar — `PriceTable.test.tsx`
-- [ ] T034 [P] [US5] Test: `useConfigurarPrecios` invalida `['precios', eventoId]` en `onSuccess`
-
-### Implementación de User Story 5
-
-- [ ] T035 [US5] Implementar `usePreciosEvento.ts` y `useConfigurarPrecios.ts`
-- [ ] T036 [US5] Implementar `ZonePriceRow.tsx`: fila con nombre zona, input de precio editable inline, badge "Configurado" / "Sin precio"
-- [ ] T037 [US5] Implementar `PriceTable.tsx`: tabla de zonas con `ZonePriceRow` + botón "Guardar Todos" que llama a `configurarPrecios` con el array de precios
-- [ ] T038 [US5] Implementar `PriceConfigurationPage.tsx`: carga zonas del evento + `PriceTable`
-
-**Checkpoint**: Configuración de precios funcional
+**Checkpoint**: Edición de eventos funcional con guard de estado
 
 ---
 
-## Phase 7: User Story 6 — Reembolsos por Cancelación (Priority: P2)
+## Phase 5: User Story 4 — Cancelar un Evento (Priority: P2)
 
-**Goal**: El administrador puede ver el listado paginado de reembolsos generados al cancelar un evento.
+**Goal**: El promotor puede cancelar un evento con justificación obligatoria. El evento desaparece
+del listado activo pero se mantiene visible con filtro por estado CANCELADO.
 
-**Independent Test**: Navegar a `/admin/eventos/:id/reembolsos` muestra tabla con todos los reembolsos del evento cancelado. Paginar navega correctamente.
+**Independent Test**: Hacer clic en "Cancelar" sobre un evento ACTIVO. El modal requiere ingresar
+motivo. Confirmar cambia el estado a CANCELADO. El evento no aparece en el listado por defecto pero
+sí al filtrar por estado CANCELADO.
 
-### Tests para User Story 6
+- [ ] T017 [US4] Implementar `useCancelarEvento.ts` con `useMutation`: invalida la lista de eventos
+  en `onSuccess`
+- [ ] T018 [US4] Implementar `CancelarEventoModal.tsx`: muestra nombre del evento para confirmar,
+  textarea motivo obligatorio (Zod `min(1)`), aviso de que la acción es irreversible, botones
+  cancelar/confirmar
+- [ ] T019 [US4] Integrar `CancelarEventoModal` en las acciones de `EventosTable`; deshabilitar el
+  botón "Cancelar" si el estado ya es CANCELADO o FINALIZADO
 
-- [ ] T039 [P] [US6] Test: `EventRefundsPage` muestra tabla de reembolsos mockeados — test
-- [ ] T040 [P] [US6] Test: paginación de reembolsos funciona correctamente
-
-### Implementación de User Story 6
-
-- [ ] T041 [US6] Implementar `useReembolsosEvento.ts` con `useQuery` paginada
-- [ ] T042 [US6] Implementar `EventRefundsPage.tsx`: tabla de reembolsos (ticketId, monto, estado, motivo) con paginación
-
-**Checkpoint**: Listado de reembolsos por evento funcional
+**Checkpoint**: Las cuatro user stories son funcionales e independientemente testeables
 
 ---
 
-## Phase 8: Polish & Cross-Cutting Concerns
+## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T043 Breadcrumb: Eventos > [Nombre] > Precios | Reembolsos
-- [ ] T044 Mensaje de advertencia al iniciar: "Esta acción pondrá el evento en progreso. Asegúrate de que los precios están configurados"
-- [ ] T045 Responsive: tabla de eventos colapsa a cards en mobile
-- [ ] T046 Verificar tipos alineados con OpenAPI del backend, especialmente `EventoResponse` y `PrecioZonaResponse`
+- [ ] T020 Implementar `EventoDetallePage.tsx`: muestra datos completos del evento incluyendo
+  `PreciosZonaTable`, acciones de editar/cancelar y links a inventario y bloqueos
+- [ ] T021 Mostrar aviso en `EventosTable` cuando un evento tiene precios sin configurar (necesario
+  para habilitar ventas)
+- [ ] T022 Verificar que el filtro por estado `CANCELADO` en `EventoFiltrosBar` funciona
+  correctamente con el query param del backend
 
 ---
 
 ## Dependencies & Execution Order
 
-- **Foundational (Phase 1)**: Depende del plan 001 completado
+### Phase Dependencies
+
+- **Foundational (Phase 1)**: Depende de los features 001 y 002 completados — bloquea todas las
+  user stories y los features 004 y 011
 - **US1 (Phase 2)**: Depende de Foundational
-- **US2 (Phase 3)**: Depende de US1 (`EventListPage` base construida)
-- **US3 (Phase 4)**: Depende de Foundational y de `useEvento`
-- **US4 (Phase 5)**: Depende de US3 (`EventDetailPage`)
-- **US5 (Phase 6)**: Depende de Foundational y de US4 (`EventDetailPage` como contenedor)
-- **US6 (Phase 7)**: Depende de Foundational — independiente de otras US
-- **Polish (Phase 8)**: Depende de todo
+- **US2 (Phase 3)**: Depende de US1 — necesita el eventoId y las zonas del recinto
+- **US3 (Phase 4)**: Depende de US1 — puede ejecutarse en paralelo con US2
+- **US4 (Phase 5)**: Depende de US1 — `useCancelarEvento` necesita que el evento exista
+- **Polish (Phase 6)**: Depende de todas las user stories
+
+### Dentro de cada User Story
+
+- Tipos y servicio antes que hooks
+- Hooks antes que componentes y páginas
+- Verificar checkpoint antes de pasar a la siguiente fase
 
 ---
 
 ## Notes
 
-- **Flujo recomendado post-creación**: al crear un evento se redirige directamente a `/admin/eventos/:id/precios` para que el administrador configure los precios de inmediato
-- **EventForm reutilizado**: en modo creación usa `POST /eventos`; en modo edición usa `PUT /eventos/{id}` — diferenciar con prop `eventoId?: string`
-- **Zonas para precios**: la tabla de precios obtiene las zonas del recinto del evento usando el endpoint `/api/v1/recintos/{recintoId}/zonas` del plan 001 — reutilizar `useZonas(recintoId)` del plan 001
-- **Ciclo de vida**: la lógica de qué botones mostrar está encapsulada en `EventLifecycleActions` — no en `EventDetailPage` — para facilitar testing y reutilización
-- Este módulo es prerequisito directo de planes 004, 009 y 010 — completar antes de comenzar esos features
-
+- **Solapamiento de fechas**: el backend retorna HTTP 409 si las fechas del nuevo evento solapan
+  con otro evento en el mismo recinto — mostrar el mensaje del backend directamente en el modal,
+  ya que contiene el nombre del evento conflictivo
+- **Guard de edición**: deshabilitar visualmente el botón "Editar" cuando el estado es EN_PROGRESO
+  (no solo manejar el error 409) — la UX debe comunicar la restricción antes de que el usuario
+  intente la acción
+- **Precios obligatorios para ventas**: sin precios configurados, el checkout del feature 004 falla
+  — el aviso en `EventosTable` sobre precios pendientes es una guía operacional importante para el
+  promotor
+- **Estado CANCELADO en listado**: por defecto `GET /api/eventos` excluye cancelados; el filtro
+  `estado=CANCELADO` en `eventosStore` debe enviarse como query param al servicio para que el
+  backend los incluya

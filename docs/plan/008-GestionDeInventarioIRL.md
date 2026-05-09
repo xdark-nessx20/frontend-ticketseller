@@ -1,158 +1,224 @@
-# Implementation Plan: Gestión de Inventario IRL – Frontend
+# Implementation Plan: Gestión de Inventario en Tiempo Real – Frontend
 
-**Date**: 09/05/2026  
-**Specs**:
-
-- [008-GestionDeInventarioIRL.md](/docs/plan/008-GestionDeInventarioIRL.md)
+**Date**: 09/05/2026
 
 ## Summary
 
-El **Administrador** debe poder consultar la disponibilidad en tiempo real de asientos individuales, marcarlos como ocupados tras confirmación de pago fuera del sistema normal, y liberar holds que fallen o venzan. Este módulo expone un dashboard de inventario en tiempo real con mapa de disponibilidad por zonas y controles de ocupación/liberación manual.
+El sistema debe mostrar al **Administrador** el estado de disponibilidad de asientos en tiempo real: qué asientos
+están libres, cuáles tienen un hold temporal activo y su tiempo de expiración, y cuáles ya están ocupados. La
+interfaz permite verificar manualmente la disponibilidad de un asiento específico y visualizar el mapa de estado
+del inventario del evento.
 
-El dashboard es principalmente de lectura — el flujo normal de ocupación lo maneja el checkout automáticamente. Las operaciones manuales (ocupar, liberar) son para casos excepcionales donde el operador necesita corregir el estado sin pasar por el flujo de checkout.
-
-Depende del plan 002 completado (el mapa de asientos debe existir).
+Este módulo es de solo lectura para el administrador — las acciones de reserva y ocupación las ejecuta el sistema
+automáticamente. Depende del feature 002 (asientos) y feature 012 (eventos).
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x  
-**Framework**: React 18+ (Vite)  
-**Styling**: Tailwind CSS 3.x  
-**Server State**: TanStack Query v5  
-**Client State**: Zustand  
-**HTTP Client**: Axios  
-**Router**: React Router v6  
-**Testing**: Vitest + React Testing Library + MSW  
-**Target Platform**: Admin Panel SPA  
-**Performance Goals**: Dashboard de disponibilidad actualizable en menos de 1s con polling cada 30s.  
-**Constraints**: La ocupación manual solo debe usarse como corrección de emergencia. La liberación de un hold ACTIVO lo cambia a LIBERADO. El backend valida la transición de estado.  
-**Scale/Scope**: Feature operativo de inventario — depende de plan 002.
+**Language/Version**: TypeScript 5.x
+**Framework**: React 18+ (Vite)
+**Styling**: Tailwind CSS 3.x
+**Server State**: TanStack Query v5 (refresco automático cada 30s para inventario en tiempo real)
+**Client State**: Zustand (no requerido — datos del servidor son la fuente de verdad)
+**HTTP Client**: Axios
+**Router**: React Router v6
+**Target Platform**: Admin Panel SPA
+**Performance Goals**: Verificación de disponibilidad de un asiento en menos de 1s. Mapa de inventario carga en
+menos de 2s con hasta 5,000 asientos.
+**Constraints**: No modificar estados desde esta interfaz — solo visualización y verificación. Los holds expirados
+deben reflejarse correctamente (el backend los limpia automáticamente).
+**Scale/Scope**: Extiende el feature 002 — `Asiento` con estado `RESERVADO` y campo `expiraEn` debe existir.
+
+## TypeScript Types
+
+> Estos tipos deben mantenerse alineados con los DTOs del backend. Cualquier cambio en los contratos de la API debe
+> reflejarse aquí primero.
+
+### Enums
+
+```typescript
+// EstadoAsiento extendido — importar desde asiento.types.ts (feature 002) y verificar que incluye:
+// 'DISPONIBLE' | 'BLOQUEADO' | 'RESERVADO' | 'VENDIDO' | 'MANTENIMIENTO' | 'ANULADO'
+// Este feature agrega los estados RESERVADO y OCUPADO al ciclo
+```
+
+### Interfaces de Respuesta
+
+```typescript
+interface DisponibilidadResponse {
+  asientoId: string;
+  disponible: boolean;
+  mensaje: string | null;
+}
+
+interface AsientoInventarioResponse {
+  id: string;
+  numero: string;
+  fila: number;
+  columna: number;
+  zonaId: string;
+  estado: string;               // EstadoAsiento
+  expiraEn: string | null;      // ISO 8601 — presente solo en estado RESERVADO
+}
+
+interface InventarioEventoResponse {
+  eventoId: string;
+  totalAsientos: number;
+  disponibles: number;
+  reservados: number;
+  ocupados: number;
+  bloqueados: number;
+  asientos: AsientoInventarioResponse[];
+}
+```
+
+### Interfaces de Request
+
+```typescript
+interface VerificarDisponibilidadParams {
+  eventoId: string;
+  asientoId: string;
+}
+```
 
 ## Coding Standards
 
 > **⚠️ ADVERTENCIA — Reglas obligatorias de estilo de código:**
 >
-> 1. **NO crear comentarios innecesarios.**
-> 2. **Clean Code**: nombres descriptivos, componentes pequeños.
-> 3. **`interface`** para objetos, **`type`** para uniones.
-> 4. Solo componentes funcionales.
-> 5. Lógica en custom hooks.
-> 6. Solo clases Tailwind.
+> 1. **NO crear comentarios innecesarios.** El código debe ser autoexplicativo. Solo se permiten comentarios cuando
+>    aportan contexto que el código solo no puede expresar.
+> 2. **Se DEBEN respetar los principios del Clean Code.** Nombres descriptivos, componentes pequeños de responsabilidad
+>    única, sin código muerto, sin duplicación.
+> 3. **Para tipos, usar `interface` para objetos y props, `type` para uniones y primitivas.**
+> 4. **Solo componentes funcionales** — sin class components.
+> 5. **Lógica de negocio en custom hooks** — los componentes solo renderizan.
+> 6. **Sin estilos inline** — solo clases Tailwind.
 
 ## Project Structure
+
+### Archivos nuevos que agrega este feature
 
 ```text
 src/
 ├── types/
-│   └── inventario.types.ts       ← DisponibilidadResponse, EstadoHold enum
+│   └── inventario.types.ts
 ├── services/
 │   └── inventarioService.ts
 ├── hooks/
 │   └── inventario/
-│       ├── useDisponibilidad.ts
-│       ├── useOcuparAsiento.ts
-│       └── useLiberarHold.ts
+│       ├── useInventarioEvento.ts
+│       └── useVerificarDisponibilidad.ts
 ├── pages/
 │   └── inventario/
-│       └── InventoryDashboardPage.tsx
+│       └── InventarioEventoPage.tsx
 └── components/
     └── inventario/
-        ├── SeatAvailabilityMap.tsx
-        ├── ZoneAvailabilityRow.tsx
-        ├── InventoryStatCard.tsx
-        ├── SeatStatusDot.tsx
-        └── OccupyReleaseControls.tsx
-
-src/__tests__/
-└── inventario/
-    ├── InventoryStatCard.test.tsx
-    ├── ZoneAvailabilityRow.test.tsx
-    └── OccupyReleaseControls.test.tsx
+        ├── InventarioResumen.tsx
+        ├── InventarioMapaGrid.tsx
+        ├── AsientoInventarioCelda.tsx
+        ├── HoldCountdown.tsx
+        └── VerificarDisponibilidadPanel.tsx
 ```
 
 ---
 
-## Phase 1: Foundational
+## Phase 1: Foundational (Blocking Prerequisites)
+
+**Purpose**: Tipos TypeScript y servicio — base de las consultas de inventario.
+
+**⚠️ CRITICAL**: Depende de los features 002 y 012 completados. `EstadoAsiento` debe incluir `RESERVADO` y `OCUPADO`.
 
 - [ ] T001 Definir interfaces en `inventario.types.ts`:
-  - `DisponibilidadResponse` (asientoId, estadoActual, holdActivo, fechaExpiracionHold)
-  - `InventarioZona` (zonaId, nombre, totalAsientos, disponibles, reservados, vendidos, bloqueados)
-  - Enum: `EstadoHold` (ACTIVO, EXPIRADO, LIBERADO, CONFIRMADO)
+    - `DisponibilidadResponse`, `AsientoInventarioResponse`, `InventarioEventoResponse`
+    - `VerificarDisponibilidadParams`
 - [ ] T002 Implementar `inventarioService.ts`:
-  - `getDisponibilidad(asientoId)` — GET `/api/v1/inventario/asientos/{id}/disponibilidad`
-  - `ocuparAsiento(asientoId)` — PATCH `/api/v1/inventario/asientos/{id}/ocupar`
-  - `liberarHold(asientoId)` — PATCH `/api/v1/inventario/asientos/{id}/liberar`
-- [ ] T003 Definir ruta: `/admin/inventario/:eventoId`
+    - `getInventarioEvento(eventoId)` → `GET /api/inventario/eventos/{eventoId}`
+    - `verificarDisponibilidad(eventoId, asientoId)` → `GET /api/inventario/asientos/{id}/disponibilidad`
+- [ ] T003 Definir ruta: `/admin/eventos/:id/inventario`
 
-**Checkpoint**: Tipos y servicio compilando
-
----
-
-## Phase 2: User Story 1 — Dashboard de Disponibilidad (Priority: P1)
-
-**Goal**: El administrador puede ver un resumen de disponibilidad por zonas y por asiento individual.
-
-**Independent Test**: Navegar a `/admin/inventario/:eventoId` muestra cards por zona con contadores disponibles/reservados/vendidos. Hacer clic en un asiento del mapa muestra el detalle de su hold activo si existe.
-
-### Tests para User Story 1
-
-- [ ] T004 [P] [US1] Test: `InventoryStatCard` muestra contadores correctos — `InventoryStatCard.test.tsx`
-- [ ] T005 [P] [US1] Test: `ZoneAvailabilityRow` renderiza barra de progreso proporcional — `ZoneAvailabilityRow.test.tsx`
-- [ ] T006 [P] [US1] Test: `useDisponibilidad` re-ejecuta cada 30 segundos (refetchInterval)
-
-### Implementación de User Story 1
-
-- [ ] T007 [US1] Implementar `useDisponibilidad.ts`: `useQuery` con `refetchInterval: 30000`
-- [ ] T008 [US1] Implementar `SeatStatusDot.tsx`: punto de color según `EstadoAsiento` (verde/amarillo/rojo/gris)
-- [ ] T009 [US1] Implementar `InventoryStatCard.tsx`: card con título zona, barra de progreso, contadores numéricos
-- [ ] T010 [US1] Implementar `ZoneAvailabilityRow.tsx`: fila con nombre zona, barra proporcional y números
-- [ ] T011 [US1] Implementar `SeatAvailabilityMap.tsx`: versión readonly del mapa del plan 002 con `SeatStatusDot` como celda — clic en celda abre panel de detalle
-- [ ] T012 [US1] Implementar `InventoryDashboardPage.tsx`: grid de `InventoryStatCard` arriba + `SeatAvailabilityMap` abajo + botón "Actualizar"
-
-**Checkpoint**: Dashboard de disponibilidad funcional con polling automático
+**Checkpoint**: Tipos definidos, servicio compilando
 
 ---
 
-## Phase 3: User Story 2 — Ocupar / Liberar Hold (Priority: P2)
+## Phase 2: User Story 1 — Verificar Disponibilidad de un Asiento (Priority: P1)
 
-**Goal**: El administrador puede marcar un asiento como ocupado o liberar su hold desde el panel de detalle.
+**Goal**: El administrador puede ingresar el ID de un asiento y verificar si está disponible en el contexto de un
+evento. La respuesta muestra el estado actual y el motivo si no está disponible.
 
-**Independent Test**: Hacer clic en asiento RESERVADO abre panel con su hold activo y tiempo restante. Clic en "Liberar" cambia el estado a DISPONIBLE con confirmación. Clic en "Ocupar" marca como VENDIDO.
+**Independent Test**: En el panel de inventario del evento, ingresar el ID de un asiento DISPONIBLE muestra
+"Disponible: Sí". Ingresar un asiento RESERVADO muestra "Disponible: No" con el tiempo de expiración del hold.
 
-### Tests para User Story 2
+- [ ] T004 [US1] Implementar `useVerificarDisponibilidad.ts` con `useQuery`: clave dinámica por `asientoId`,
+  `staleTime: 0` para siempre consultar estado fresco
+- [ ] T005 [US1] Implementar `VerificarDisponibilidadPanel.tsx`: input de ID de asiento, botón "Verificar",
+  resultado con `disponible` en badge verde/rojo, mensaje descriptivo
+- [ ] T006 [US1] Integrar `VerificarDisponibilidadPanel` en `InventarioEventoPage.tsx`
 
-- [ ] T013 [P] [US2] Test: `OccupyReleaseControls` muestra botones según estado del asiento — `OccupyReleaseControls.test.tsx`
-- [ ] T014 [P] [US2] Test: confirmar "Ocupar" llama a `ocuparAsiento` — `OccupyReleaseControls.test.tsx`
+**Checkpoint**: Verificación de disponibilidad funcional
 
-### Implementación de User Story 2
+---
 
-- [ ] T015 [US2] Implementar `useOcuparAsiento.ts` y `useLiberarHold.ts` con `useMutation`
-- [ ] T016 [US2] Implementar `OccupyReleaseControls.tsx`: panel con estado del hold, tiempo restante, botones ocupar/liberar con confirmación inline
-- [ ] T017 [US2] Integrar controles en `InventoryDashboardPage.tsx` como panel lateral deslizante
+## Phase 3: User Story 2 + 3 — Mapa de Inventario y Holds Activos (Priority: P1)
 
-**Checkpoint**: Ocupación y liberación manual funcional
+**Goal**: El administrador puede ver el mapa completo de asientos del evento con su estado actual. Los asientos con
+hold muestran un countdown del tiempo restante hasta la liberación automática.
+
+**Independent Test**: Navegar a `/admin/eventos/:id/inventario` muestra el `InventarioResumen` con conteos y el
+`InventarioMapaGrid` con asientos coloreados por estado. Las celdas con estado RESERVADO muestran `HoldCountdown`
+activo.
+
+- [ ] T007 [US2+US3] Implementar `useInventarioEvento.ts` con `useQuery`: `refetchInterval: 30_000` para
+  actualización automática cada 30 segundos durante el evento
+- [ ] T008 [US2+US3] Implementar `HoldCountdown.tsx`: calcula tiempo restante desde `expiraEn` (ISO 8601) hasta
+  `now()`, actualiza cada segundo, muestra `MM:SS` en color naranja
+- [ ] T009 [US2+US3] Implementar `AsientoInventarioCelda.tsx`: celda coloreada según estado (verde=DISPONIBLE,
+  naranja=RESERVADO, rojo=OCUPADO/VENDIDO, gris=BLOQUEADO), muestra `HoldCountdown` si tiene `expiraEn`
+- [ ] T010 [US2+US3] Implementar `InventarioMapaGrid.tsx`: grid de asientos usando virtualización; agrupa por zona
+  con encabezado de nombre de zona
+- [ ] T011 [US2+US3] Implementar `InventarioResumen.tsx`: tarjetas con conteos de disponibles, reservados, ocupados
+  y bloqueados; muestra porcentaje de ocupación
+- [ ] T012 [US2+US3] Implementar `InventarioEventoPage.tsx`: `InventarioResumen` en la parte superior,
+  `VerificarDisponibilidadPanel` y `InventarioMapaGrid` en el cuerpo
+
+**Checkpoint**: Mapa de inventario en tiempo real funcional con holds visibles
 
 ---
 
 ## Phase 4: Polish & Cross-Cutting Concerns
 
-- [ ] T018 Indicador visual de "última actualización: hace Xs" junto al botón Actualizar
-- [ ] T019 Advertencia visual antes de "Ocupar" (acción excepcional)
-- [ ] T020 Verificar tipos alineados con OpenAPI del backend
+- [ ] T013 Agregar leyenda de colores al `InventarioMapaGrid` para que el administrador pueda identificar estados
+- [ ] T014 Mostrar timestamp de "última actualización" junto al botón de recarga manual
+- [ ] T015 Verificar que `HoldCountdown` se detiene y muestra "Expirado" cuando `expiraEn` ya pasó (el scheduler
+  del backend limpia el hold, pero puede haber un lag de hasta 1 minuto)
+- [ ] T016 Usar el mismo componente de virtualización del feature 002 (`MapaAsientosGrid`) o extenderlo — no crear
+  una segunda implementación de grid
 
 ---
 
 ## Dependencies & Execution Order
 
-- **Foundational (Phase 1)**: Depende de plan 002 completado
+### Phase Dependencies
+
+- **Foundational (Phase 1)**: Depende de los features 002 y 012 completados
 - **US1 (Phase 2)**: Depende de Foundational
-- **US2 (Phase 3)**: Depende de US1
-- **Polish (Phase 4)**: Depende de todo
+- **US2+US3 (Phase 3)**: Depende de Foundational — puede ejecutarse en paralelo con US1
+- **Polish (Phase 4)**: Depende de todas las fases
+
+### Dentro de cada User Story
+
+- Tipos y servicio antes que hooks
+- Hooks antes que componentes y páginas
+- Verificar checkpoint antes de pasar a la siguiente fase
 
 ---
 
 ## Notes
 
-- **Polling vs WebSocket**: el backend actual es REST — usar `refetchInterval` de TanStack Query para polling cada 30s. Si en el futuro se agrega WebSocket, solo cambia el hook sin tocar los componentes
-- **Reutilización de SeatGrid**: el `SeatAvailabilityMap` reutiliza el componente base del plan 002 en modo readonly — implementar prop `mode: 'readonly'` que deshabilita selección
-
+- **`refetchInterval`**: el refresco automático cada 30s es un balance entre frescura de datos y carga al servidor;
+  ajustar según el volumen de eventos simultáneos
+- **Reutilización de grid**: el `MapaAsientosGrid` del feature 002 y el `InventarioMapaGrid` de este feature sirven
+  propósitos distintos (edición vs visualización) — pueden compartir el mismo componente base de celda con props
+  diferentes en lugar de duplicar el layout
+- **Hold expirado visible**: cuando un hold expira, el backend actualiza el estado en el siguiente ciclo del scheduler
+  (hasta 1 min de lag) — mostrar "Expirado" en el countdown cuando `expiraEn < now()` sin esperar la actualización
+  del servidor
+- **EstadoAsiento compartido**: no redefinir el enum — importar desde `asiento.types.ts` del feature 002

@@ -1,174 +1,218 @@
 # Implementation Plan: Checkout y Pago – Frontend
 
-**Date**: 09/05/2026  
-**Specs**:
-
-- [004-CheckoutYPago.md](/docs/plan/004-CheckoutYPago.md)
-- [005-CheckoutYPago.md](/docs/spec/005-CheckoutYPago.md)
+**Date**: 09/05/2026
 
 ## Summary
 
-El **Comprador** debe poder explorar eventos disponibles, seleccionar asientos, reservarlos con un TTL de 15 minutos, completar el pago con datos de tarjeta o transferencia y recibir confirmación con sus tickets. Este módulo es el flujo de compra principal del sistema — el más complejo del frontend porque involucra estado transitorio (carrito, TTL), integración de pasarela y un mapa interactivo de selección de asientos.
+El **Comprador** debe poder seleccionar asientos de un evento, reservarlos temporalmente mientras completa el pago
+(TTL de 15 minutos), procesar la transacción con tarjeta o transferencia y recibir sus tickets por email con código
+QR único. Este es el flujo de compra principal de la plataforma.
 
-El flujo tiene cuatro pasos: explorar eventos → seleccionar asientos en el mapa → checkout con resumen → pago. El estado del carrito (asientos seleccionados, código promo aplicado, venta activa) es persistido en Zustand para sobrevivir navegación entre pasos. Un temporizador visible muestra el tiempo restante de la reserva activa (TTL 15 min); al expirar, la app limpia el carrito y notifica al usuario.
+La arquitectura separa el flujo en dos páginas principales: selección de asientos (con mapa o lista por zona) y
+formulario de pago. El estado del carrito se persiste en Zustand con TTL sincronizado con el backend. Las mutaciones
+son secuenciales: primero reservar, luego pagar.
 
-Este módulo depende del plan 001 (recintos y zonas), plan 002 (catálogo de asientos), y plan 012 (eventos disponibles con precios configurados).
+Depende del feature 012 (eventos con precios configurados) y del feature 002 (asientos disponibles).
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x  
-**Framework**: React 18+ (Vite)  
-**Styling**: Tailwind CSS 3.x  
-**Server State**: TanStack Query v5  
-**Client State**: Zustand  
-**HTTP Client**: Axios  
-**Router**: React Router v6  
-**Testing**: Vitest + React Testing Library + MSW  
-**Target Platform**: Customer Portal SPA  
-**Performance Goals**: Proceso de reserva completa en menos de 1s. Confirmación de pago en menos de 5s. Mapa interactivo cargado antes de 2s.  
-**Constraints**: TTL de reserva 15 minutos — el timer debe ser preciso. Un asiento reservado por otro usuario no puede seleccionarse. El pago solo es posible sobre una venta en estado RESERVADA.  
-**Scale/Scope**: Feature central del portal del comprador — bloquea post-venta y devoluciones.
+**Language/Version**: TypeScript 5.x
+**Framework**: React 18+ (Vite)
+**Styling**: Tailwind CSS 3.x
+**Server State**: TanStack Query v5
+**Client State**: Zustand (carrito, countdown del TTL)
+**HTTP Client**: Axios
+**Router**: React Router v6
+**Target Platform**: Buyer Portal SPA
+**Performance Goals**: Reserva confirmada en menos de 2s. Proceso de pago completado en menos de 5s para el 95% de
+transacciones.
+**Constraints**: Solo se pueden comprar asientos en estado DISPONIBLE. El TTL de reserva es 15 minutos — el carrito
+muestra un countdown. Pagos duplicados deben prevenirse. No se puede pagar sobre una venta EXPIRADA.
+**Scale/Scope**: Feature de mayor complejidad — introduce integración con pasarela de pagos. Depende del feature 012.
+
+## TypeScript Types
+
+> Estos tipos deben mantenerse alineados con los DTOs del backend. Cualquier cambio en los contratos de la API debe
+> reflejarse aquí primero.
+
+### Enums
+
+```typescript
+type EstadoVenta = 'RESERVADA' | 'COMPLETADA' | 'EXPIRADA' | 'CANCELADA';
+type EstadoTicket = 'DISPONIBLE' | 'RESERVADO' | 'VENDIDO' | 'CANCELADO' | 'REEMBOLSO_PENDIENTE' | 'REEMBOLSADO' | 'ANULADO';
+type MetodoPago = 'TARJETA' | 'TRANSFERENCIA';
+```
+
+### Interfaces de Respuesta
+
+```typescript
+interface VentaResponse {
+  id: string;
+  compradorId: string;
+  eventoId: string;
+  estado: EstadoVenta;
+  fechaCreacion: string;          // ISO 8601
+  fechaExpiracion: string;        // ISO 8601
+  total: number;
+}
+
+interface TicketResponse {
+  id: string;
+  ventaId: string;
+  eventoId: string;
+  zonaId: string;
+  compuertaId: string;
+  codigoQR: string;
+  estado: EstadoTicket;
+  precio: number;
+  esCortesia: boolean;
+}
+
+interface VentaDetalleResponse {
+  venta: VentaResponse;
+  tickets: TicketResponse[];
+}
+```
+
+### Interfaces de Request
+
+```typescript
+interface ReservarAsientosRequest {
+  zonaId: string;
+  cantidad: number;
+  // alternativa: ticketIds específicos
+  asientoIds?: string[];
+}
+
+interface ProcesarPagoRequest {
+  metodoPago: MetodoPago;
+  // datos del medio de pago — estructura depende del proveedor de pasarela
+  numeroTarjeta?: string;
+  mesExpiracion?: string;
+  anioExpiracion?: string;
+  cvv?: string;
+  titular?: string;
+}
+```
 
 ## Coding Standards
 
 > **⚠️ ADVERTENCIA — Reglas obligatorias de estilo de código:**
 >
-> 1. **NO crear comentarios innecesarios.**
-> 2. **Clean Code**: nombres descriptivos, componentes pequeños.
-> 3. **`interface`** para objetos, **`type`** para uniones.
-> 4. Solo componentes funcionales.
-> 5. Lógica en custom hooks.
-> 6. Solo clases Tailwind.
+> 1. **NO crear comentarios innecesarios.** El código debe ser autoexplicativo. Solo se permiten comentarios cuando
+>    aportan contexto que el código solo no puede expresar.
+> 2. **Se DEBEN respetar los principios del Clean Code.** Nombres descriptivos, componentes pequeños de responsabilidad
+>    única, sin código muerto, sin duplicación.
+> 3. **Para tipos, usar `interface` para objetos y props, `type` para uniones y primitivas.**
+> 4. **Solo componentes funcionales** — sin class components.
+> 5. **Lógica de negocio en custom hooks** — los componentes solo renderizan.
+> 6. **Sin estilos inline** — solo clases Tailwind.
 
 ## Project Structure
+
+### Archivos nuevos que agrega este feature
 
 ```text
 src/
 ├── types/
-│   └── checkout.types.ts         ← VentaResponse, TicketResponse, ReservarRequest, PagarRequest, etc.
+│   └── checkout.types.ts
 ├── services/
-│   └── checkoutService.ts        ← reservar, pagar, consultarVenta
+│   └── checkoutService.ts
 ├── stores/
-│   └── cartStore.ts              ← Zustand: asientos seleccionados, ventaActiva, TTL, código promo
+│   └── carritoStore.ts
 ├── hooks/
 │   └── checkout/
-│       ├── useEventos.ts
-│       ├── useEvento.ts
-│       ├── usePreciosEvento.ts
 │       ├── useReservarAsientos.ts
 │       ├── useProcesarPago.ts
-│       ├── useConsultarVenta.ts
-│       └── useReservationTimer.ts
+│       ├── useVenta.ts
+│       └── useCarritoCountdown.ts
 ├── pages/
 │   └── checkout/
-│       ├── EventBrowsePage.tsx
-│       ├── EventDetailPage.tsx
-│       ├── SeatSelectionPage.tsx
+│       ├── EventoAsientosPage.tsx
 │       ├── CheckoutPage.tsx
-│       └── OrderConfirmationPage.tsx
+│       └── ConfirmacionPage.tsx
 └── components/
     └── checkout/
-        ├── EventCard.tsx
-        ├── EventGrid.tsx
-        ├── EventFilters.tsx
-        ├── InteractiveSeatMap.tsx
-        ├── SeatLegend.tsx
-        ├── CartSummary.tsx
-        ├── CartItem.tsx
-        ├── ReservationTimer.tsx
-        ├── PromoCodeInput.tsx
-        ├── PaymentForm.tsx
-        └── OrderSummary.tsx
-
-src/__tests__/
-└── checkout/
-    ├── EventCard.test.tsx
-    ├── InteractiveSeatMap.test.tsx
-    ├── ReservationTimer.test.tsx
-    ├── PaymentForm.test.tsx
-    ├── cartStore.test.ts
-    └── useReservarAsientos.test.ts
+        ├── ZonaSelectorPanel.tsx
+        ├── AsientoSelectorGrid.tsx
+        ├── ResumenCarrito.tsx
+        ├── CarritoCountdown.tsx
+        ├── FormularioPago.tsx
+        ├── TicketConfirmado.tsx
+        └── VentaEstadoBadge.tsx
 ```
 
 ---
 
 ## Phase 1: Foundational (Blocking Prerequisites)
 
-**⚠️ CRITICAL**: Depende de plan 012 completado (eventos con precios configurados deben existir).
+**Purpose**: Tipos TypeScript, servicio Axios y store del carrito — base que todas las user stories necesitan.
+
+**⚠️ CRITICAL**: Depende del feature 012 completado — el evento debe tener precios por zona configurados.
 
 - [ ] T001 Definir interfaces en `checkout.types.ts`:
-  - `VentaResponse` (id, compradorId, eventoId, estado, fechaCreacion, fechaExpiracion, total, tickets)
-  - `TicketResponse` (id, ventaId, asientoId, numeroTicket, codigoQr, estado, tipoCategoria, precio)
-  - `ReservarAsientosRequest` (eventoId, compradorId, asientoIds)
-  - `ProcesarPagoRequest` (montoPagado, metodoPago, idExternoPasarela)
-  - Enums: `EstadoVenta`, `MetodoPago`, `EstadoTicket`
+    - `VentaResponse`, `TicketResponse`, `VentaDetalleResponse`
+    - `ReservarAsientosRequest`, `ProcesarPagoRequest`
+    - Enums: `EstadoVenta`, `EstadoTicket`, `MetodoPago`
 - [ ] T002 Implementar `checkoutService.ts`:
-  - `reservarAsientos(data)` — POST `/api/v1/checkout/reservar`
-  - `procesarPago(ventaId, data)` — POST `/api/v1/checkout/{ventaId}/pagar`
-  - `consultarVenta(ventaId)` — GET `/api/v1/checkout/{ventaId}`
-- [ ] T003 Implementar `cartStore.ts` con Zustand:
-  - Estado: `selectedSeatIds: string[]`, `ventaActiva: VentaResponse | null`, `promoCode: string`, `compradorId: string`
-  - Acciones: `toggleSeat`, `clearCart`, `setVentaActiva`, `setPromoCode`, `setCompradorId`
-- [ ] T004 Definir rutas: `/eventos`, `/eventos/:eventoId`, `/eventos/:eventoId/asientos`, `/checkout`, `/checkout/confirmacion/:ventaId`
+    - `reservarAsientos(data)` → `POST /api/checkout/reservar`
+    - `procesarPago(ventaId, data)` → `POST /api/checkout/{ventaId}/pagar`
+    - `getVenta(ventaId)` → `GET /api/checkout/{ventaId}`
+- [ ] T003 Implementar `carritoStore.ts` con Zustand:
+    - Estado: `ventaId`, `fechaExpiracion`, `asientosSeleccionados`, `isExpired`
+    - Acciones: `setReserva`, `clearCarrito`, `marcarExpirado`
+- [ ] T004 Definir rutas: `/eventos/:id/asientos`, `/checkout/:ventaId`, `/checkout/:ventaId/confirmacion`
 
-**Checkpoint**: Tipos, servicio y store compilando; rutas registradas
-
----
-
-## Phase 2: User Story 2 — Carrito con TTL (Priority: implementar antes que US1)
-
-**Goal**: Los asientos seleccionados se reservan con TTL de 15 minutos y se libera si no se completa el pago.
-
-**Independent Test**: Reservar asientos muestra un timer regresivo visible. Al llegar a 0:00 el carrito se limpia, se muestra un mensaje "Tu reserva expiró" y el mapa actualiza la disponibilidad.
-
-### Tests para User Story 2
-
-- [ ] T005 [P] [US2] Test: `ReservationTimer` muestra "14:59" un segundo después de la reserva — `ReservationTimer.test.tsx`
-- [ ] T006 [P] [US2] Test: `ReservationTimer` llama a `clearCart` y muestra mensaje al llegar a 0 — `ReservationTimer.test.tsx`
-- [ ] T007 [P] [US2] Test: `cartStore` `setVentaActiva` guarda `fechaExpiracion` correctamente — `cartStore.test.ts`
-
-### Implementación de User Story 2
-
-- [ ] T008 [US2] Implementar `useReservationTimer.ts`: deriva los segundos restantes de `ventaActiva.fechaExpiracion`, usa `setInterval` con cleanup, llama a `cartStore.clearCart()` al expirar
-- [ ] T009 [US2] Implementar `ReservationTimer.tsx`: muestra timer en formato MM:SS, cambia a rojo cuando faltan menos de 2 minutos
-- [ ] T010 [US2] Implementar `useReservarAsientos.ts` con `useMutation`: llama a `checkoutService.reservarAsientos`, en `onSuccess` llama a `setVentaActiva(data)`
-- [ ] T011 [US2] Integrar `ReservationTimer` en el layout de las páginas `SeatSelectionPage` y `CheckoutPage`
-
-**Checkpoint**: TTL visual funcional y liberación al expirar
+**Checkpoint**: Tipos definidos, servicio compilando, store del carrito funcionando
 
 ---
 
-## Phase 3: User Story 1 — Flujo de Compra Completo (Priority: P1)
+## Phase 2: User Story 2 — Reserva Temporal y Countdown (Priority: P2, se implementa primero)
 
-**Goal**: El comprador puede explorar eventos, seleccionar asientos, reservar, pagar y recibir confirmación.
+**Goal**: Al seleccionar asientos e iniciar el checkout, el sistema reserva los asientos por 15 minutos. Si el
+comprador no completa el pago, los asientos se liberan automáticamente.
 
-**Independent Test**: Navegar a `/eventos`, hacer clic en un evento, seleccionar 2 asientos disponibles, ir a checkout, ingresar datos de pago válidos y confirmar — llegar a `/checkout/confirmacion/:ventaId` con los tickets y sus códigos QR.
+**Independent Test**: Seleccionar 2 asientos y hacer clic en "Reservar" crea la reserva y muestra el countdown de
+15 minutos. Pasado el tiempo, el contador llega a 0:00 y se muestra aviso de expiración.
 
-### Tests para User Story 1
+- [ ] T005 [US2] Implementar `useReservarAsientos.ts` con `useMutation`: en `onSuccess` guarda la reserva en
+  `carritoStore` y navega a `/checkout/:ventaId`
+- [ ] T006 [US2] Implementar `useCarritoCountdown.ts`: hook que calcula el tiempo restante hasta `fechaExpiracion`,
+  actualiza cada segundo con `setInterval`, llama a `carritoStore.marcarExpirado()` al llegar a 0
+- [ ] T007 [US2] Implementar `CarritoCountdown.tsx`: muestra `MM:SS` restantes, cambia a color rojo cuando quedan
+  menos de 2 minutos, muestra banner de expiración al llegar a 0
+- [ ] T008 [US2] Implementar `ZonaSelectorPanel.tsx`: muestra las zonas del evento con precio y disponibilidad,
+  permite seleccionar cantidad de asientos por zona
+- [ ] T009 [US2] Implementar `ResumenCarrito.tsx`: lista los asientos seleccionados, muestra subtotal y total
+- [ ] T010 [US2] Implementar `EventoAsientosPage.tsx`: usa `ZonaSelectorPanel`, `ResumenCarrito` y botón
+  "Reservar" que llama a `useReservarAsientos`
 
-- [ ] T012 [P] [US1] Test: `EventCard` renderiza nombre, fecha, venue y precio mínimo — `EventCard.test.tsx`
-- [ ] T013 [P] [US1] Test: `InteractiveSeatMap` no permite seleccionar asientos no disponibles — `InteractiveSeatMap.test.tsx`
-- [ ] T014 [P] [US1] Test: `InteractiveSeatMap` limita la selección al máximo de entradas por compra — `InteractiveSeatMap.test.tsx`
-- [ ] T015 [P] [US1] Test: `PaymentForm` valida todos los campos requeridos antes de enviar — `PaymentForm.test.tsx`
-- [ ] T016 [P] [US1] Test: `useProcesarPago` muestra error si la reserva está expirada (409) — `useReservarAsientos.test.ts`
-- [ ] T017 [P] [US1] Test: `CartSummary` calcula el total correctamente con descuento aplicado — test
+**Checkpoint**: Reserva temporal funcional con countdown sincronizado
 
-### Implementación de User Story 1
+---
 
-- [ ] T018 [US1] Implementar `useEventos.ts` (lista con filtros), `useEvento.ts` (detalle), `usePreciosEvento.ts`
-- [ ] T019 [US1] Implementar `EventCard.tsx`: imagen, nombre evento, fecha, recinto, precio desde X
-- [ ] T020 [US1] Implementar `EventFilters.tsx`: filtros por nombre, tipo, fecha
-- [ ] T021 [US1] Implementar `EventGrid.tsx`: grid responsive de `EventCard` con paginación
-- [ ] T022 [US1] Implementar `EventBrowsePage.tsx` y `EventDetailPage.tsx`
-- [ ] T023 [US1] Implementar `InteractiveSeatMap.tsx`: reutiliza lógica de grilla del plan 002 pero en modo compra — celdas DISPONIBLE son seleccionables, BLOQUEADO/RESERVADO/VENDIDO son disabled con opacidad
-- [ ] T024 [US1] Implementar `SeatLegend.tsx`: leyenda de colores disponible/reservado/vendido/zona
-- [ ] T025 [US1] Implementar `SeatSelectionPage.tsx`: mapa + panel derecho con `CartSummary` y botón "Reservar"
-- [ ] T026 [US1] Implementar `CartSummary.tsx` y `CartItem.tsx`: lista de asientos seleccionados, subtotales, total
-- [ ] T027 [US1] Implementar `PromoCodeInput.tsx`: input de código promo con botón "Aplicar", muestra descuento aplicado o error
-- [ ] T028 [US1] Implementar `useProcesarPago.ts` con `useMutation`: invalida `['venta', ventaId]` en `onSuccess`
-- [ ] T029 [US1] Implementar `PaymentForm.tsx`: campos número tarjeta, CVV, expiración, titular — o selector de método TRANSFERENCIA; validación Zod
-- [ ] T030 [US1] Implementar `CheckoutPage.tsx`: `CartSummary` + `PromoCodeInput` + `PaymentForm` + `ReservationTimer`
-- [ ] T031 [US1] Implementar `OrderConfirmationPage.tsx`: usa `useConsultarVenta`, muestra lista de tickets con código QR (imagen base64), botón "Descargar PDF" (// TODO: integrar librería PDF)
+## Phase 3: User Story 1 — Comprar Ticket con Tarjeta o Transferencia (Priority: P1)
+
+**Goal**: El comprador puede completar el pago de una reserva activa. Si el pago es exitoso, recibe los tickets con
+QR. Si es rechazado, la reserva permanece activa y puede reintentar.
+
+**Independent Test**: Navegar a `/checkout/:ventaId` con reserva activa muestra el formulario de pago con el resumen.
+Completar con datos válidos muestra la pantalla de confirmación con los tickets. Con datos rechazados muestra error
+y mantiene la reserva.
+
+- [ ] T011 [US1] Implementar `useProcesarPago.ts` con `useMutation`: en `onSuccess` navega a
+  `/checkout/:ventaId/confirmacion`; en `onError` maneja 402 (fondos insuficientes) y 503 (error de pasarela)
+  con mensajes específicos
+- [ ] T012 [US1] Implementar `useVenta.ts` con `useQuery`: clave `['venta', ventaId]`, llama a
+  `checkoutService.getVenta(ventaId)`
+- [ ] T013 [US1] Implementar `FormularioPago.tsx`: select de método de pago, campos según método seleccionado,
+  validación Zod, muestra error del backend si existe
+- [ ] T014 [US1] Implementar `CheckoutPage.tsx`: usa `useVenta`, `CarritoCountdown`, `ResumenCarrito` y
+  `FormularioPago`; redirige a la página de asientos si la venta está EXPIRADA
+- [ ] T015 [US1] Implementar `TicketConfirmado.tsx`: muestra datos del ticket (zona, asiento, QR en imagen),
+  mensaje de confirmación por email
+- [ ] T016 [US1] Implementar `ConfirmacionPage.tsx`: usa `useVenta` para mostrar la venta COMPLETADA con todos
+  los tickets usando `TicketConfirmado`
 
 **Checkpoint**: Flujo completo de compra funcional end-to-end
 
@@ -176,27 +220,40 @@ src/__tests__/
 
 ## Phase 4: Polish & Cross-Cutting Concerns
 
-- [ ] T032 Proteger rutas de checkout con guard que verifique `compradorId` en el store
-- [ ] T033 Persistir `cartStore` en sessionStorage para resistir recargas accidentales
-- [ ] T034 Manejo de error de red en `PaymentForm`: deshabilitar botón mientras procesa, mostrar spinner
-- [ ] T035 Accesibilidad del mapa interactivo: `role="grid"`, `role="gridcell"`, `aria-disabled` en no disponibles
-- [ ] T036 Verificar tipos contra OpenAPI del backend, especialmente `VentaResponse` y `TicketResponse`
+- [ ] T017 Deshabilitar el botón "Pagar" mientras `useProcesarPago.isPending` para prevenir pagos duplicados
+- [ ] T018 Limpiar `carritoStore` al completar exitosamente la compra o al detectar expiración
+- [ ] T019 Manejar el caso donde el usuario navega directamente a `/checkout/:ventaId` sin pasar por la selección
+  de asientos (cargar la venta desde el backend y mostrar su estado)
+- [ ] T020 Agregar pantalla de error dedicada para venta EXPIRADA con botón de retorno al evento
+- [ ] T021 Verificar alineación de `MetodoPago` con los valores aceptados por la pasarela configurada
 
 ---
 
 ## Dependencies & Execution Order
 
-- **Foundational (Phase 1)**: Depende de plan 012 (eventos con precios)
-- **US2/Timer (Phase 2)**: Depende de Foundational — implementar antes que US1
-- **US1/Flujo completo (Phase 3)**: Depende de US2
-- **Polish (Phase 4)**: Depende de todo
+### Phase Dependencies
+
+- **Foundational (Phase 1)**: Depende del feature 012 completado
+- **US2 (Phase 2)**: Depende de Foundational — implementar antes que US1 porque el TTL es prerequisito del pago
+- **US1 (Phase 3)**: Depende de US2 — el flujo de pago opera sobre una venta ya reservada
+- **Polish (Phase 4)**: Depende de US1 y US2
+
+### Dentro de cada User Story
+
+- Tipos y servicio antes que hooks
+- Hooks antes que páginas y componentes
+- Verificar checkpoint antes de pasar a la siguiente fase
 
 ---
 
 ## Notes
 
-- **compradorId**: el backend usa header `X-Comprador-Id` para identificar al comprador — almacenarlo en `cartStore` y añadirlo al cliente Axios como header por defecto al autenticar
-- **QR**: el backend retorna `codigoQr` como string base64 — renderizar con `<img src="data:image/png;base64,..." />`
-- **Pasarela real**: el formulario de pago envía `idExternoPasarela` y `montoPagado` al backend — en sandbox, estos pueden ser valores fijos; en producción vendrán del widget de Wompi
-- **Concurrencia**: si un asiento es reservado por otro usuario mientras el comprador lo tiene seleccionado (pero aún no reservado), el error del backend (409) debe reflejarse mostrando el asiento como no disponible en el mapa
-
+- **CarritoStore vs servidor**: el store solo persiste `ventaId` y `fechaExpiracion`; los datos completos de la venta
+  siempre se obtienen del backend vía `useVenta` — nunca duplicar en el store
+- **Countdown preciso**: usar `fechaExpiracion` del servidor (no calcular 15 min desde el cliente) para evitar drift
+  por diferencias de reloj
+- **QR en imagen**: el campo `codigoQR` del backend es un string Base64 de la imagen QR — renderizar con `<img
+  src={`data:image/png;base64,${ticket.codigoQR}`} />`
+- **Error 402 vs 503**: distinguir fondos insuficientes (402, reintentar con otro método) de error de pasarela
+  (503, reintentar más tarde) en los mensajes de usuario
+- **Acceso a rutas de checkout**: rutas `/checkout/*` deben requerir autenticación de comprador
