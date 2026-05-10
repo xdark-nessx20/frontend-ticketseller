@@ -40,11 +40,13 @@ export function EditarEventoModal({ evento, onClose }: EditarEventoModalProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       nombre: evento.nombre,
-      tipo: evento.tipo,
+      tipo: evento.tipo.toUpperCase(),
       fechaInicio: toDatetimeLocal(evento.fechaInicio),
       fechaFin: toDatetimeLocal(evento.fechaFin),
     },
   });
+
+  const tipoField = register('tipo');
 
   function onSubmit(data: FormValues) {
     mutate(
@@ -89,7 +91,11 @@ export function EditarEventoModal({ evento, onClose }: EditarEventoModalProps) {
           <div>
             <label className="block text-sm font-medium text-gray-700">Tipo</label>
             <input
-              {...register('tipo')}
+              {...tipoField}
+              onChange={e => {
+                e.target.value = e.target.value.toUpperCase();
+                tipoField.onChange(e);
+              }}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
             {errors.tipo && (

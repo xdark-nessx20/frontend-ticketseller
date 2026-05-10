@@ -35,6 +35,8 @@ export function CrearEventoModal({ onClose }: CrearEventoModalProps) {
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
+  const tipoField = register('tipo');
+
   function onSubmit(data: FormValues) {
     mutate(
       {
@@ -80,8 +82,12 @@ export function CrearEventoModal({ onClose }: CrearEventoModalProps) {
           <div>
             <label className="block text-sm font-medium text-gray-700">Tipo</label>
             <input
-              {...register('tipo')}
-              placeholder="Concierto, teatro, conferencia…"
+              {...tipoField}
+              onChange={e => {
+                e.target.value = e.target.value.toUpperCase();
+                tipoField.onChange(e);
+              }}
+              placeholder="CONCIERTO, TEATRO, CONFERENCIA…"
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
             {errors.tipo && (

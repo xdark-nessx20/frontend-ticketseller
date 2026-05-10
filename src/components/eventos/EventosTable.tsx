@@ -62,12 +62,6 @@ export function EventosTable({ eventos }: EventosTableProps) {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
                       <button
-                        onClick={() => navigate(`/admin/eventos/${ev.id}`)}
-                        className="text-gray-600 hover:underline"
-                      >
-                        Detalle
-                      </button>
-                      <button
                         onClick={() => setConfigurandoPrecios(ev)}
                         className="text-[#413383] hover:underline"
                       >
