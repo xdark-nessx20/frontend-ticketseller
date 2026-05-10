@@ -10,7 +10,7 @@ import { EventoDetallePage } from './pages/eventos/EventoDetallePage';
 function App() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
+      <Toaster position="top-right" offset={{ top: 48 }} options={{fill: "#f6f3ea"}}/>
       <header className="bg-[#413383] px-6 py-3">
         <span className="text-lg font-bold text-white">TicketSeller</span>
       </header>
