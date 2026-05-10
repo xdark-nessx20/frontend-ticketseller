@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sileo';
 import { VenueListPage } from './pages/recintos/VenueListPage';
 import { VenueDetailPage } from './pages/recintos/VenueDetailPage';
 import { CreateVenuePage } from './pages/recintos/CreateVenuePage';
@@ -9,6 +10,7 @@ import { EventoDetallePage } from './pages/eventos/EventoDetallePage';
 function App() {
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
       <header className="bg-[#413383] px-6 py-3">
         <span className="text-lg font-bold text-white">TicketSeller</span>
       </header>

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { sileo } from 'sileo';
 import { recintosService } from '../../services/recintosService';
 import type { CrearZonaRequest } from '../../types/recinto.types';
 
@@ -10,6 +11,10 @@ export function useCreateZona(recintoId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recintos', recintoId, 'zonas'] });
       queryClient.invalidateQueries({ queryKey: ['recintos', recintoId, 'estructura'] });
+      sileo.success({ title: 'Zona creada', description: 'La zona fue añadida al recinto exitosamente.' });
+    },
+    onError: () => {
+      sileo.error({ title: 'Error al crear zona', description: 'No se pudo añadir la zona. Intenta de nuevo.' });
     },
   });
 }
