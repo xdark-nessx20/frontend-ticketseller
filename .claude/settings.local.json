@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)",
+      "Read(//home/nestor/.nvm/versions/node/**)",
+      "Read(//home/nestor/.volta/**)",
+      "Read(//home/nestor/**)",
+      "Bash(/home/nestor/.nvm/versions/node/v24.13.0/bin/node *)"
+    ]
+  }
+}
