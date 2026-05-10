@@ -70,4 +70,8 @@ export const recintosService = {
   createCompuerta(recintoId: string, data: CrearCompuertaRequest) {
     return api.post<CompuertaResponse>(`/recintos/${recintoId}/compuertas`, data).then(r => r.data);
   },
+
+  asignarCompuertaZona(zonaId: string, compuertaId: string) {
+    return api.patch<CompuertaResponse>(`/recintos/zonas/${zonaId}/compuertas/${compuertaId}`).then(r => r.data);
+  },
 };

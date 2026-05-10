@@ -44,7 +44,7 @@ export function VenueTable({ recintos }: VenueTableProps) {
     <>
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-200">
             <tr>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Nombre</th>
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Ciudad</th>
@@ -54,9 +54,13 @@ export function VenueTable({ recintos }: VenueTableProps) {
               <th className="px-4 py-3 text-left font-semibold text-gray-600">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
+          <tbody className="divide-y divide-gray-100">
             {recintos.map(r => (
-              <tr key={r.id} className="hover:bg-gray-50">
+              <tr
+                key={r.id}
+                onClick={() => navigate(`/admin/recintos/${r.id}`)}
+                className="cursor-pointer bg-[#F6F3EA] hover:bg-[#EDE9D8]"
+              >
                 <td className="px-4 py-3 font-medium text-gray-900">{r.nombre}</td>
                 <td className="px-4 py-3 text-gray-600">{r.ciudad}</td>
                 <td className="px-4 py-3 text-gray-600">{r.categoria ?? '—'}</td>
@@ -67,24 +71,18 @@ export function VenueTable({ recintos }: VenueTableProps) {
                 <td className="px-4 py-3">
                   <div className="flex gap-2">
                     <button
-                      aria-label={`Ver ${r.nombre}`}
-                      onClick={() => navigate(`/admin/recintos/${r.id}`)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Ver
-                    </button>
-                    <button
                       aria-label={`Editar ${r.nombre}`}
-                      onClick={() => navigate(`/admin/recintos/${r.id}/editar`)}
+                      onClick={e => { e.stopPropagation(); navigate(`/admin/recintos/${r.id}/editar`); }}
                       className="text-gray-600 hover:underline"
                     >
                       Editar
                     </button>
                     <button
                       aria-label={r.activo ? `Desactivar ${r.nombre}` : `Reactivar ${r.nombre}`}
-                      onClick={() =>
-                        setConfirm({ recintoId: r.id, accion: r.activo ? 'desactivar' : 'reactivar' })
-                      }
+                      onClick={e => {
+                        e.stopPropagation();
+                        setConfirm({ recintoId: r.id, accion: r.activo ? 'desactivar' : 'reactivar' });
+                      }}
                       className={r.activo ? 'text-red-600 hover:underline' : 'text-green-600 hover:underline'}
                     >
                       {r.activo ? 'Desactivar' : 'Reactivar'}

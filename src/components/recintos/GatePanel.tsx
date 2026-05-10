@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCompuertas } from '../../hooks/recintos/useCompuertas';
 import { useCreateCompuerta } from '../../hooks/recintos/useCreateCompuerta';
 import { useZonas } from '../../hooks/recintos/useZonas';
+import { useAsignarCompuertaZona } from '../../hooks/recintos/useAsignarCompuertaZona';
 import { GateForm } from './GateForm';
 import type { CrearCompuertaRequest } from '../../types/recinto.types';
 
@@ -11,9 +12,11 @@ interface GatePanelProps {
 
 export function GatePanel({ recintoId }: GatePanelProps) {
   const [showForm, setShowForm] = useState(false);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
   const { data: compuertas, isLoading } = useCompuertas(recintoId);
   const { data: zonas = [] } = useZonas(recintoId);
   const { mutate, isPending } = useCreateCompuerta(recintoId);
+  const asignar = useAsignarCompuertaZona(recintoId);
 
   function handleSubmit(data: CrearCompuertaRequest) {
     const payload: CrearCompuertaRequest = {
@@ -26,6 +29,10 @@ export function GatePanel({ recintoId }: GatePanelProps) {
   function zonaNombre(zonaId: string | null) {
     if (!zonaId) return null;
     return zonas.find(z => z.id === zonaId)?.nombre ?? zonaId;
+  }
+
+  function handleAsignar(compuertaId: string, zonaId: string) {
+    asignar.mutate({ zonaId, compuertaId }, { onSuccess: () => setAssigningId(null) });
   }
 
   return (
@@ -63,7 +70,32 @@ export function GatePanel({ recintoId }: GatePanelProps) {
             <li key={c.id} className="flex items-center justify-between px-4 py-3">
               <span className="font-medium text-gray-800">{c.nombre}</span>
               {c.esGeneral ? (
-                <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">General</span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600">General</span>
+                  {assigningId === c.id ? (
+                    <select
+                      autoFocus
+                      className="rounded border border-gray-300 px-1 py-0.5 text-xs"
+                      defaultValue=""
+                      disabled={asignar.isPending}
+                      onChange={e => { if (e.target.value) handleAsignar(c.id, e.target.value); }}
+                      onBlur={() => setAssigningId(null)}
+                    >
+                      <option value="" disabled>Seleccionar zona…</option>
+                      {zonas.map(z => (
+                        <option key={z.id} value={z.id}>{z.nombre}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <button
+                      onClick={() => setAssigningId(c.id)}
+                      disabled={zonas.length === 0}
+                      className="text-xs text-indigo-600 hover:underline disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Asignar zona
+                    </button>
+                  )}
+                </div>
               ) : (
                 <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs text-blue-700">
                   {zonaNombre(c.zonaId)}
