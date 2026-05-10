@@ -7,7 +7,13 @@
       "Read(//home/nestor/.nvm/versions/node/**)",
       "Read(//home/nestor/.volta/**)",
       "Read(//home/nestor/**)",
-      "Bash(/home/nestor/.nvm/versions/node/v24.13.0/bin/node *)"
+      "Bash(/home/nestor/.nvm/versions/node/v24.13.0/bin/node *)",
+      "Bash(/home/nestor/.nvm/versions/node/v22.17.0/bin/npm run *)",
+      "Bash(/home/nestor/.nvm/versions/node/v24.13.0/bin/npm run *)",
+      "Bash(~/.nvm/versions/node/v24.13.0/bin/tsc *)",
+      "Bash(~/.nvm/versions/node/v24.13.0/bin/node *)",
+      "Bash(/home/nestor/.nvm/versions/node/v22.14.0/bin/npm run *)",
+      "Bash(/home/nestor/.nvm/versions/node/v24.13.0/lib/node_modules/npm/bin/npm-cli.js run *)"
     ]
   }
 }

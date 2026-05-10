@@ -5,9 +5,9 @@
 ## Summary
 
 El **Promotor de Eventos** debe poder registrar nuevos eventos asignándolos a un recinto, configurar
-los precios de entradas por zona, editar la información del evento y cancelarlo con justificación
-obligatoria. `Evento` es la entidad central que conecta el inventario (feature 002) con la venta de
-tickets (feature 004): sin un evento activo y con precios configurados no puede haber compras.
+los precios de entradas por zona, editar la información del evento, marcarlo como en progreso, o finalizado, y
+cancelarlo con justificación obligatoria. `Evento` es la entidad central que conecta el inventario (feature 002) con la
+venta de tickets (feature 004): sin un evento activo y con precios configurados no puede haber compras.
 
 Este módulo opera exclusivamente desde el panel de administración. Depende del feature 001 (recintos)
 y feature 002 (zonas). Bloquea los features 004 (checkout) y 011 (liquidación).
@@ -45,22 +45,22 @@ type TipoEvento = string;          // valor libre definido por el promotor (conc
 
 ```typescript
 interface EventoResponse {
-  id: string;
-  nombre: string;
-  fechaInicio: string;             // ISO 8601
-  fechaFin: string;                // ISO 8601
-  tipo: TipoEvento;
-  recintoId: string;
-  estado: EstadoEvento;
-  motivoCancelacion: string | null;
+    id: string;
+    nombre: string;
+    fechaInicio: string;             // ISO 8601
+    fechaFin: string;                // ISO 8601
+    tipo: TipoEvento;
+    recintoId: string;
+    estado: EstadoEvento;
+    motivoCancelacion: string | null;
 }
 
 interface PrecioZonaResponse {
-  id: string;
-  eventoId: string;
-  zonaId: string;
-  zonaNombre: string;
-  precio: number;
+    id: string;
+    eventoId: string;
+    zonaId: string;
+    zonaNombre: string;
+    precio: number;
 }
 ```
 
@@ -68,36 +68,36 @@ interface PrecioZonaResponse {
 
 ```typescript
 interface CrearEventoRequest {
-  nombre: string;
-  fechaInicio: string;             // ISO 8601
-  fechaFin: string;                // ISO 8601
-  tipo: string;
-  recintoId: string;
+    nombre: string;
+    fechaInicio: string;             // ISO 8601
+    fechaFin: string;                // ISO 8601
+    tipo: string;
+    recintoId: string;
 }
 
 interface EditarEventoRequest {
-  nombre?: string;
-  fechaInicio?: string;            // ISO 8601
-  fechaFin?: string;               // ISO 8601
-  tipo?: string;
+    nombre?: string;
+    fechaInicio?: string;            // ISO 8601
+    fechaFin?: string;               // ISO 8601
+    tipo?: string;
 }
 
 interface CancelarEventoRequest {
-  estado: 'CANCELADO';
-  motivo: string;                  // obligatorio
+    estado: 'CANCELADO';
+    motivo: string;                  // obligatorio
 }
 
 interface PrecioZonaRequest {
-  zonaId: string;
-  precio: number;                  // positivo
+    zonaId: string;
+    precio: number;                  // positivo
 }
 
 interface ConfigurarPreciosRequest {
-  precios: PrecioZonaRequest[];    // debe incluir todas las zonas del recinto
+    precios: PrecioZonaRequest[];    // debe incluir todas las zonas del recinto
 }
 
 interface EventoFiltros {
-  estado?: EstadoEvento;
+    estado?: EstadoEvento;
 }
 ```
 
@@ -106,9 +106,9 @@ interface EventoFiltros {
 > **⚠️ ADVERTENCIA — Reglas obligatorias de estilo de código:**
 >
 > 1. **NO crear comentarios innecesarios.** El código debe ser autoexplicativo. Solo se permiten comentarios cuando
->    aportan contexto que el código solo no puede expresar.
+     > aportan contexto que el código solo no puede expresar.
 > 2. **Se DEBEN respetar los principios del Clean Code.** Nombres descriptivos, componentes pequeños de responsabilidad
->    única, sin código muerto, sin duplicación.
+     > única, sin código muerto, sin duplicación.
 > 3. **Para tipos, usar `interface` para objetos y props, `type` para uniones y primitivas.**
 > 4. **Solo componentes funcionales** — sin class components.
 > 5. **Lógica de negocio en custom hooks** — los componentes solo renderizan.
