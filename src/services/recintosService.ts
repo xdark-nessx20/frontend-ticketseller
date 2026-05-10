@@ -40,7 +40,7 @@ export const recintosService = {
   },
 
   desactivarRecinto(id: string) {
-    return api.patch<void>(`/recintos/${id}/desactivar`).then(r => r.data);
+    return api.delete<void>(`/recintos/${id}/desactivar`).then(r => r.data);
   },
 
   reactivarRecinto(id: string) {

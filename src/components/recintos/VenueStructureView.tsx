@@ -11,7 +11,8 @@ export function VenueStructureView({ recintoId }: VenueStructureViewProps) {
   if (error) return <p className="text-sm text-red-500">Error al cargar la estructura.</p>;
   if (!data) return null;
 
-  const { zonas, compuertas } = data;
+  const zonas = data.zonas ?? [];
+  const compuertas = data.compuertas ?? [];
 
   return (
     <div className="space-y-4">
@@ -23,7 +24,7 @@ export function VenueStructureView({ recintoId }: VenueStructureViewProps) {
               <span className="font-semibold text-gray-800">{zona.nombre}</span>
               <div className="flex items-center gap-3 text-sm text-gray-500">
                 <span>{zona.tipo}</span>
-                <span>{zona.capacidad.toLocaleString()} personas</span>
+                <span>{(zona.capacidad ?? 0).toLocaleString()} personas</span>
               </div>
             </div>
             {compuertasZona.length > 0 && (

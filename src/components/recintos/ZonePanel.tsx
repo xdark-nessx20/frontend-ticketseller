@@ -48,7 +48,7 @@ export function ZonePanel({ recintoId }: ZonePanelProps) {
               <span className="font-medium text-gray-800">{z.nombre}</span>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-500">{z.tipo}</span>
-                <span className="text-sm text-gray-500">{z.capacidad.toLocaleString()} personas</span>
+                <span className="text-sm text-gray-500">{(z.capacidad ?? 0).toLocaleString()} personas</span>
               </div>
             </li>
           ))}
