@@ -7,6 +7,9 @@ import { CategoryConfigModal } from '../../components/recintos/CategoryConfigMod
 import { ZonePanel } from '../../components/recintos/ZonePanel';
 import { GatePanel } from '../../components/recintos/GatePanel';
 import { VenueStructureView } from '../../components/recintos/VenueStructureView';
+import { TipoAsientoPanel } from '../../components/asientos/TipoAsientoPanel';
+
+type TabActiva = 'estructura' | 'tipos-asiento';
 
 export function VenueDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +17,7 @@ export function VenueDetailPage() {
 
   const [showCapacityModal, setShowCapacityModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [tabActiva, setTabActiva] = useState<TabActiva>('estructura');
 
   if (isLoading) {
     return (
@@ -48,6 +52,12 @@ export function VenueDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge activo={recinto.activo} />
+          <Link
+            to={`/admin/recintos/${id}/mapa`}
+            className="rounded-md border border-[#413383] px-3 py-1.5 text-sm text-[#413383] hover:bg-[#413383]/5"
+          >
+            Mapa
+          </Link>
           <Link
             to={`/admin/recintos/${id}/editar`}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
@@ -91,14 +101,48 @@ export function VenueDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <ZonePanel recintoId={id!} />
-        <GatePanel recintoId={id!} />
-      </div>
+      <div>
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => setTabActiva('estructura')}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+              tabActiva === 'estructura'
+                ? 'border-b-2 border-[#413383] text-[#413383]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Zonas y Compuertas
+          </button>
+          <button
+            onClick={() => setTabActiva('tipos-asiento')}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+              tabActiva === 'tipos-asiento'
+                ? 'border-b-2 border-[#413383] text-[#413383]'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Tipos de Asiento
+          </button>
+        </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-semibold text-gray-800">Estructura del recinto</h2>
-        <VenueStructureView recintoId={id!} />
+        <div className="mt-6">
+          {tabActiva === 'estructura' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <ZonePanel recintoId={id!} />
+                <GatePanel recintoId={id!} />
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-white p-5">
+                <h2 className="mb-4 text-lg font-semibold text-gray-800">Estructura del recinto</h2>
+                <VenueStructureView recintoId={id!} />
+              </div>
+            </div>
+          )}
+
+          {tabActiva === 'tipos-asiento' && (
+            <TipoAsientoPanel recintoId={id!} />
+          )}
+        </div>
       </div>
 
       {showCapacityModal && (
