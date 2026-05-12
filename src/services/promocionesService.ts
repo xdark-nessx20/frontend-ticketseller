@@ -27,16 +27,16 @@ export const promocionesService = {
     return api.patch<PromocionResponse>(`/admin/promociones/${promocionId}/estado`, data).then(r => r.data);
   },
 
+  crearCodigos(promocionId: string, data: CrearCodigosRequest) {
+    return api.post<void>(`/admin/promociones/${promocionId}/codigos`, data).then(r => r.data);
+  },
+
   getDescuentos(promocionId: string) {
     return api.get<DescuentoResponse[]>(`/admin/promociones/${promocionId}/descuentos`).then(r => r.data);
   },
 
   crearDescuento(promocionId: string, data: CrearDescuentoRequest) {
     return api.post<DescuentoResponse>(`/admin/promociones/${promocionId}/descuentos`, data).then(r => r.data);
-  },
-
-  crearCodigos(promocionId: string, data: CrearCodigosRequest) {
-    return api.post<void>(`/admin/promociones/${promocionId}/codigos`, data).then(r => r.data);
   },
 
   aplicarCodigo(data: AplicarCodigoRequest) {

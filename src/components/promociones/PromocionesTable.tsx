@@ -58,10 +58,10 @@ export function PromocionesTable({ promociones, eventoId, recintoId }: Promocion
                 </td>
               </tr>
             ) : (
-              promociones.map((p, i) => (
+              promociones.map((p) => (
                 <tr
                   key={p.id}
-                  className={`hover:bg-[#EDE9D8] ${i % 2 === 0 ? 'bg-white' : 'bg-[#F6F3EA]'}`}
+                  className={`hover:bg-[#EDE9D8] bg-[#F6F3EA]`}
                 >
                   <td className="px-4 py-3 font-medium text-gray-800">{p.nombre}</td>
                   <td className="px-4 py-3 text-gray-600">{TIPO_LABELS[p.tipo] ?? p.tipo}</td>
