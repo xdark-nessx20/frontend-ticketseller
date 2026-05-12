@@ -27,12 +27,13 @@ export function MapaAsientosPage() {
   const tieneZonas = (zonas?.length ?? 0) > 0;
   const sinMapa =
     !isLoading &&
-    !asientos?.length &&
-    (!isError || (axios.isAxiosError(error) && error.response?.status === 404));
+    isError &&
+    axios.isAxiosError(error) &&
+    error.response?.status === 404;
 
   const handleToggle = useCallback(
-    (asientoId: string, existente: boolean) => {
-      marcarEspacioVacio({ asientoId, data: { existente } });
+    (asientoId: string) => {
+      marcarEspacioVacio({ asientoId });
     },
     [marcarEspacioVacio],
   );
@@ -94,7 +95,7 @@ export function MapaAsientosPage() {
             <p className="mt-1 text-sm text-gray-500">{recinto.nombre} · {recinto.ciudad}</p>
           )}
         </div>
-        {!sinMapa && !tieneZonas && (
+        {!sinMapa && (
           <div className="flex gap-2">
             {modoSeleccion ? (
               <button
@@ -105,12 +106,14 @@ export function MapaAsientosPage() {
               </button>
             ) : (
               <>
-                <button
-                  onClick={() => setModoSeleccion(true)}
-                  className="rounded-md border border-[#413383] px-3 py-1.5 text-sm text-[#413383] hover:bg-[#413383]/5"
-                >
-                  Asignar a zona
-                </button>
+                {tieneZonas && (
+                  <button
+                    onClick={() => setModoSeleccion(true)}
+                    className="rounded-md border border-[#413383] px-3 py-1.5 text-sm text-[#413383] hover:bg-[#413383]/5"
+                  >
+                    Asignar a zona
+                  </button>
+                )}
                 <button
                   onClick={() => setShowCrearModal(true)}
                   className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
@@ -123,15 +126,7 @@ export function MapaAsientosPage() {
         )}
       </div>
 
-      {tieneZonas && (
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
-          <p className="text-sm text-yellow-800">
-            Este recinto tiene zonas configuradas. Los recintos con zonas planas no pueden tener mapa numerado.
-          </p>
-        </div>
-      )}
-
-      {!tieneZonas && sinMapa && (
+      {sinMapa && (
         <div className="rounded-lg border border-gray-200 bg-white p-10 text-center">
           <p className="text-gray-500">Este recinto aún no tiene un mapa de asientos configurado.</p>
           <button

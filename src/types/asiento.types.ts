@@ -1,5 +1,5 @@
 export type EstadoTipoAsiento = 'ACTIVO' | 'INACTIVO';
-export type EstadoAsiento = 'DISPONIBLE' | 'BLOQUEADO' | 'RESERVADO' | 'VENDIDO' | 'MANTENIMIENTO' | 'ANULADO';
+export type EstadoAsiento = 'DISPONIBLE' | 'BLOQUEADO' | 'RESERVADO' | 'VENDIDO' | 'MANTENIMIENTO' | 'ANULADO' | 'INACTIVO';
 
 export interface TipoAsientoResponse {
   id: string;
@@ -40,10 +40,6 @@ export interface AsignarAsientosZonaRequest {
 export interface CrearMapaAsientosRequest {
   filas: number;
   columnasPorFila: number;
-}
-
-export interface MarcarEspacioVacioRequest {
-  existente: boolean;
 }
 
 export interface TipoAsientoFiltros {

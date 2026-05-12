@@ -7,7 +7,7 @@ const ROW_HEIGHT = 40;
 
 interface MapaAsientosGridProps {
   asientos: AsientoResponse[];
-  onToggle: (asientoId: string, existente: boolean) => void;
+  onToggle: (asientoId: string) => void;
   modoSeleccion?: boolean;
   selectedIds?: Set<string>;
   onSelect?: (asientoId: string) => void;
@@ -38,10 +38,6 @@ export function MapaAsientosGrid({ asientos, onToggle, modoSeleccion, selectedId
     <div>
       <div className="mb-3 flex flex-wrap gap-4 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded border border-[#413383]/30 bg-[#413383]/10" />
-          Disponible
-        </span>
-        <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded border border-red-300 bg-red-100" />
           Vendido
         </span>
@@ -52,6 +48,10 @@ export function MapaAsientosGrid({ asientos, onToggle, modoSeleccion, selectedId
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded border border-orange-300 bg-orange-100" />
           Bloqueado
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 rounded border border-emerald-600 bg-emerald-500" />
+          Disponible
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded border border-dashed border-gray-200 bg-gray-50" />

@@ -7,7 +7,6 @@ import type {
   AsignarTipoAsientoRequest,
   AsignarAsientosZonaRequest,
   CrearMapaAsientosRequest,
-  MarcarEspacioVacioRequest,
   TipoAsientoFiltros,
 } from '../types/asiento.types';
 
@@ -49,19 +48,20 @@ export const tiposAsientoService = {
   },
 
   getMapaAsientos(recintoId: string) {
-    return api.get<AsientoResponse[]>(`/recintos/${recintoId}/mapa/asientos`).then(r => r.data);
+    return api
+      .get<AsientoResponse[]>(`/recintos/${recintoId}/mapa/asientos`)
+      .then(r => r.data.map(a => ({ ...a, existente: a.estado !== 'INACTIVO' })));
   },
 
   crearMapaAsientos(recintoId: string, data: CrearMapaAsientosRequest) {
-    return api.post<AsientoResponse[]>(`/recintos/${recintoId}/mapa`, data).then(r => r.data);
+    return api
+      .post<AsientoResponse[]>(`/recintos/${recintoId}/mapa`, data)
+      .then(r => r.data.map(a => ({ ...a, existente: a.estado !== 'INACTIVO' })));
   },
 
-  marcarEspacioVacio(recintoId: string, asientoId: string, data: MarcarEspacioVacioRequest) {
+  marcarEspacioVacio(recintoId: string, asientoId: string) {
     return api
-      .patch<AsientoResponse>(
-        `/recintos/${recintoId}/mapa/asientos/${asientoId}`,
-        data,
-      )
+      .patch<AsientoResponse>(`/recintos/${recintoId}/mapa/asientos/${asientoId}`)
       .then(r => r.data);
   },
 };
