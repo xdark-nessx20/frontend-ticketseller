@@ -8,6 +8,9 @@ import { EventosPage } from './pages/eventos/EventosPage';
 import { EventoDetallePage } from './pages/eventos/EventoDetallePage';
 import { MapaAsientosPage } from './pages/asientos/MapaAsientosPage';
 import { PromocionesPage } from './pages/promociones/PromocionesPage';
+import { EventoAsientosPage } from './pages/checkout/EventoAsientosPage';
+import { CheckoutPage } from './pages/checkout/CheckoutPage';
+import { ConfirmacionPage } from './pages/checkout/ConfirmacionPage';
 
 function App() {
   return (
@@ -26,6 +29,9 @@ function App() {
           <Route path="/admin/eventos" element={<EventosPage />} />
           <Route path="/admin/eventos/:id" element={<EventoDetallePage />} />
           <Route path="/admin/eventos/:eventoId/promociones" element={<PromocionesPage />} />
+          <Route path="/eventos/:id/asientos" element={<EventoAsientosPage />} />
+          <Route path="/checkout/:ventaId" element={<CheckoutPage />} />
+          <Route path="/checkout/:ventaId/confirmacion" element={<ConfirmacionPage />} />
           <Route path="*" element={<Navigate to="/admin/recintos" replace />} />
         </Routes>
       </main>
