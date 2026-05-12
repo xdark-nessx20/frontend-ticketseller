@@ -10,6 +10,7 @@ import { PreciosZonaTable } from '../../components/eventos/PreciosZonaTable';
 import { EditarEventoModal } from '../../components/eventos/EditarEventoModal';
 import { CancelarEventoModal } from '../../components/eventos/CancelarEventoModal';
 import { ConfigurarPreciosModal } from '../../components/eventos/ConfigurarPreciosModal';
+import { MantenimientoAsientosSection } from '../../components/mantenimiento/MantenimientoAsientosSection';
 
 export function EventoDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -177,6 +178,10 @@ export function EventoDetallePage() {
         ) : (
           <PreciosZonaTable mode="view" precios={preciosConNombre} />
         )}
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-white p-5">
+        <MantenimientoAsientosSection eventoId={evento.id} />
       </div>
 
       {showEditar && (

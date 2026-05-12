@@ -19,7 +19,10 @@
       "Bash(/home/nestor/.nvm/versions/node/v22.12.0/bin/npx tsc *)",
       "Bash(/home/nestor/.nvm/versions/node/v24.13.0/bin/npx tsc *)",
       "Bash(node_modules/.bin/tsc --noEmit)",
-      "Bash(node_modules/.bin/tsc *)"
+      "Bash(node_modules/.bin/tsc *)",
+      "Bash(/home/nestor/.nvm/versions/node/v22.13.1/bin/npm run *)",
+      "Bash(~/.nvm/versions/node/v24.13.0/bin/npm run *)",
+      "Bash(export PATH=\"$HOME/.nvm/versions/node/v24.13.0/bin:$PATH\")"
     ]
   }
 }
