@@ -18,7 +18,8 @@
       "Bash(node *)",
       "Bash(/home/nestor/.nvm/versions/node/v22.12.0/bin/npx tsc *)",
       "Bash(/home/nestor/.nvm/versions/node/v24.13.0/bin/npx tsc *)",
-      "Bash(node_modules/.bin/tsc --noEmit)"
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(node_modules/.bin/tsc *)"
     ]
   }
 }

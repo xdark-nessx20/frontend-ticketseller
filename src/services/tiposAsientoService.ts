@@ -8,6 +8,7 @@ import type {
   AsignarAsientosZonaRequest,
   CrearMapaAsientosRequest,
   TipoAsientoFiltros,
+  Page,
 } from '../types/asiento.types';
 
 const api = axios.create({
@@ -49,8 +50,8 @@ export const tiposAsientoService = {
 
   getMapaAsientos(recintoId: string) {
     return api
-      .get<AsientoResponse[]>(`/recintos/${recintoId}/mapa/asientos`)
-      .then(r => r.data.map(a => ({ ...a, existente: a.estado !== 'INACTIVO' })));
+      .get<Page<AsientoResponse>>(`/recintos/${recintoId}/mapa/asientos`, { params: { size: 5000 } })
+      .then(r => r.data.content.map(a => ({ ...a, existente: a.estado !== 'INACTIVO' })));
   },
 
   crearMapaAsientos(recintoId: string, data: CrearMapaAsientosRequest) {

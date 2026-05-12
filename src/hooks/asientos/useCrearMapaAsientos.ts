@@ -9,7 +9,8 @@ export function useCrearMapaAsientos(recintoId: string) {
   return useMutation({
     mutationFn: (data: CrearMapaAsientosRequest) =>
       tiposAsientoService.crearMapaAsientos(recintoId, data),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      await queryClient.cancelQueries({ queryKey: ['recintos', recintoId, 'mapa'] });
       queryClient.setQueryData(['recintos', recintoId, 'mapa'], data);
       sileo.success({ title: 'Mapa creado', description: 'El mapa de asientos fue generado exitosamente.' });
     },

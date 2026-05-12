@@ -1,7 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import { useRecinto } from '../../hooks/recintos/useRecinto';
 import { useZonas } from '../../hooks/recintos/useZonas';
 import { useMapaAsientos } from '../../hooks/asientos/useMapaAsientos';
@@ -20,23 +19,16 @@ export function MapaAsientosPage() {
 
   const { data: recinto } = useRecinto(id!);
   const { data: zonas } = useZonas(id!);
-  const { data: asientos, isLoading, isFetching, isError, error } = useMapaAsientos(id!);
+  const { data: asientos, isLoading, isFetching, isError } = useMapaAsientos(id!);
   const { mutate: marcarEspacioVacio } = useMarcarEspacioVacio(id!);
   const { mutate: asignarAsientos, isPending: isAsignando } = useAsignarAsientosZona(id!);
 
   const tieneZonas = (zonas?.length ?? 0) > 0;
-  const sinMapa =
-    !isLoading &&
-    isError &&
-    axios.isAxiosError(error) &&
-    error.response?.status === 404;
+  const sinMapa = !isLoading && !isError && (asientos?.length ?? 0) === 0;
 
-  const handleToggle = useCallback(
-    (asientoId: string) => {
-      marcarEspacioVacio({ asientoId });
-    },
-    [marcarEspacioVacio],
-  );
+  function handleToggle(asientoId: string) {
+    marcarEspacioVacio({ asientoId });
+  }
 
   function handleSelect(asientoId: string) {
     setSelectedIds(prev => {
