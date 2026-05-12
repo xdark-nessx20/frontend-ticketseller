@@ -15,6 +15,14 @@ export interface PromocionResponse {
   tipoUsuarioRestringido: TipoUsuario | null;
 }
 
+export interface CodigoPromocionalResponse {
+  codigo: string;
+  usosMaximos: number;
+  usosActuales: number;
+  fechaFin: string;
+  estado: EstadoCodigoPromocional;
+}
+
 export interface DescuentoResponse {
   id: string;
   promocionId: string;

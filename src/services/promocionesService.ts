@@ -7,7 +7,7 @@ import type {
   CrearDescuentoRequest,
   CrearCodigosRequest,
   AplicarCodigoRequest,
-  ActualizarEstadoPromocionRequest,
+  ActualizarEstadoPromocionRequest, CodigoPromocionalResponse,
 } from '../types/promociones.types';
 
 const api = axios.create({
@@ -29,6 +29,10 @@ export const promocionesService = {
 
   crearCodigos(promocionId: string, data: CrearCodigosRequest) {
     return api.post<void>(`/admin/promociones/${promocionId}/codigos`, data).then(r => r.data);
+  },
+
+  obtenerCodigos(promocionId: string){
+    return api.get<CodigoPromocionalResponse[]>(`/admin/promociones/${promocionId}/codigos`).then(r => r.data);
   },
 
   getDescuentos(promocionId: string) {

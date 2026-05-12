@@ -3,7 +3,6 @@ import type { PromocionResponse } from '../../types/promociones.types';
 import { useDescuentos } from '../../hooks/promociones/useDescuentos';
 import { useZonas } from '../../hooks/recintos/useZonas';
 import { CrearDescuentoModal } from './CrearDescuentoModal';
-import { GenerarCodigosModal } from './GenerarCodigosModal';
 
 interface DescuentosPanelProps {
   promocion: PromocionResponse;
@@ -15,7 +14,6 @@ export function DescuentosPanel({ promocion, recintoId, onClose }: DescuentosPan
   const { data: descuentos, isLoading } = useDescuentos(promocion.id);
   const { data: zonas } = useZonas(recintoId);
   const [showCrear, setShowCrear] = useState(false);
-  const [showCodigos, setShowCodigos] = useState(false);
 
   const zonaMap = new Map((zonas ?? []).map(z => [z.id, z.nombre]));
 
@@ -25,22 +23,12 @@ export function DescuentosPanel({ promocion, recintoId, onClose }: DescuentosPan
         <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-800">Descuentos — {promocion.nombre}</h2>
-            <div className="flex gap-2">
-              {promocion.tipo === 'CODIGOS' && (
-                <button
-                  onClick={() => setShowCodigos(true)}
-                  className="rounded-md border border-[#413383] px-3 py-1.5 text-sm font-medium text-[#413383] hover:bg-[#413383]/5"
-                >
-                  Generar Códigos
-                </button>
-              )}
-              <button
-                onClick={() => setShowCrear(true)}
-                className="rounded-md bg-[#413383] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#362B6E]"
-              >
-                Agregar Descuento
-              </button>
-            </div>
+            <button
+              onClick={() => setShowCrear(true)}
+              className="rounded-md bg-[#413383] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#362B6E]"
+            >
+              Agregar Descuento
+            </button>
           </div>
 
           <div className="mt-4">
@@ -113,10 +101,6 @@ export function DescuentosPanel({ promocion, recintoId, onClose }: DescuentosPan
           recintoId={recintoId}
           onClose={() => setShowCrear(false)}
         />
-      )}
-
-      {showCodigos && (
-        <GenerarCodigosModal promocionId={promocion.id} onClose={() => setShowCodigos(false)} />
       )}
     </>
   );

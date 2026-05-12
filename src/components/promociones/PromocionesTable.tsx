@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { PromocionResponse } from '../../types/promociones.types';
 import { PromocionEstadoBadge } from './PromocionEstadoBadge';
 import { DescuentosPanel } from './DescuentosPanel';
+import { CodigosPanel } from './CodigosPanel';
 import { GestionarEstadoModal } from './GestionarEstadoModal';
 
 const TIPO_LABELS: Record<string, string> = {
@@ -25,6 +26,7 @@ interface PromocionesTableProps {
 
 export function PromocionesTable({ promociones, eventoId, recintoId }: PromocionesTableProps) {
   const [selectedDescuentos, setSelectedDescuentos] = useState<PromocionResponse | null>(null);
+  const [selectedCodigos, setSelectedCodigos] = useState<PromocionResponse | null>(null);
   const [selectedEstado, setSelectedEstado] = useState<PromocionResponse | null>(null);
 
   function formatFecha(iso: string) {
@@ -79,12 +81,21 @@ export function PromocionesTable({ promociones, eventoId, recintoId }: Promocion
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => setSelectedDescuentos(p)}
-                        className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                      >
-                        Descuentos
-                      </button>
+                      {p.tipo === 'CODIGOS' ? (
+                        <button
+                          onClick={() => setSelectedCodigos(p)}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                        >
+                          Códigos
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setSelectedDescuentos(p)}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                        >
+                          Descuentos
+                        </button>
+                      )}
                       <button
                         onClick={() => setSelectedEstado(p)}
                         className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
@@ -105,6 +116,13 @@ export function PromocionesTable({ promociones, eventoId, recintoId }: Promocion
           promocion={selectedDescuentos}
           recintoId={recintoId}
           onClose={() => setSelectedDescuentos(null)}
+        />
+      )}
+
+      {selectedCodigos && (
+        <CodigosPanel
+          promocion={selectedCodigos}
+          onClose={() => setSelectedCodigos(null)}
         />
       )}
 
