@@ -5,7 +5,7 @@ import type { ProcesarPagoRequest } from '../../types/checkout.types';
 
 const schema = z
   .object({
-    metodoPago: z.enum(['TARJETA', 'TRANSFERENCIA']),
+    metodoPago: z.enum(['TARJETA', 'NEQUI', 'DAVIPLATA', 'PSE', 'OTRO']),
     numeroTarjeta: z.string(),
     mesExpiracion: z.string(),
     anioExpiracion: z.string(),
@@ -48,7 +48,7 @@ export function FormularioPago({ onSubmit, isPending, backendError }: Formulario
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      metodoPago: 'TARJETA',
+      metodoPago: 'TARJETA' as const,
       numeroTarjeta: '',
       mesExpiracion: '',
       anioExpiracion: '',
@@ -72,7 +72,10 @@ export function FormularioPago({ onSubmit, isPending, backendError }: Formulario
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#413383] focus:outline-none"
         >
           <option value="TARJETA">Tarjeta de crédito / débito</option>
-          <option value="TRANSFERENCIA">Transferencia bancaria</option>
+          <option value="NEQUI">Nequi</option>
+          <option value="DAVIPLATA">Daviplata</option>
+          <option value="PSE">PSE</option>
+          <option value="OTRO">Otro</option>
         </select>
       </div>
 
@@ -145,11 +148,15 @@ export function FormularioPago({ onSubmit, isPending, backendError }: Formulario
         </>
       )}
 
-      {metodoPago === 'TRANSFERENCIA' && (
+      {metodoPago !== 'TARJETA' && (
         <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
           <p className="text-sm text-blue-700">
-            Recibirás las instrucciones de transferencia por email. Tu reserva se mantendrá activa
-            mientras el pago sea verificado.
+            Serás redirigido a la pasarela de{' '}
+            <strong>
+              {{ NEQUI: 'Nequi', DAVIPLATA: 'Daviplata', PSE: 'PSE', OTRO: 'pago' }[metodoPago]}
+            </strong>{' '}
+            para completar la transacción. Tu reserva se mantendrá activa mientras el pago es
+            confirmado.
           </p>
         </div>
       )}
