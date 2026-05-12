@@ -73,7 +73,7 @@ export function ZoneForm({ onSubmit, isPending, onCancel }: ZoneFormProps) {
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-[#413383] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#413383]/90 disabled:opacity-50"
         >
           {isPending ? 'Guardando…' : 'Agregar zona'}
         </button>

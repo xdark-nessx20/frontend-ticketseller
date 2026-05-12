@@ -96,7 +96,7 @@ export function VenueForm({ defaultValues, onSubmit, isPending, mode = 'create' 
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-[#413383] px-5 py-2 text-sm font-medium text-white hover:bg-[#413383]/80 disabled:opacity-50"
         >
           {isPending ? 'Guardando…' : mode === 'create' ? 'Crear recinto' : 'Guardar cambios'}
         </button>
