@@ -84,6 +84,12 @@ export function EventoDetallePage() {
         </div>
         <div className="flex items-center gap-2">
           <EventoEstadoBadge estado={evento.estado} />
+          <Link
+            to={`/admin/eventos/${evento.id}/promociones`}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Promociones
+          </Link>
           <button
             onClick={() => setShowPrecios(true)}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"

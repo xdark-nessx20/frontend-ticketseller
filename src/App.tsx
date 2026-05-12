@@ -7,6 +7,7 @@ import { EditVenuePage } from './pages/recintos/EditVenuePage';
 import { EventosPage } from './pages/eventos/EventosPage';
 import { EventoDetallePage } from './pages/eventos/EventoDetallePage';
 import { MapaAsientosPage } from './pages/asientos/MapaAsientosPage';
+import { PromocionesPage } from './pages/promociones/PromocionesPage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/admin/recintos/:id/mapa" element={<MapaAsientosPage />} />
           <Route path="/admin/eventos" element={<EventosPage />} />
           <Route path="/admin/eventos/:id" element={<EventoDetallePage />} />
+          <Route path="/admin/eventos/:eventoId/promociones" element={<PromocionesPage />} />
           <Route path="*" element={<Navigate to="/admin/recintos" replace />} />
         </Routes>
       </main>
