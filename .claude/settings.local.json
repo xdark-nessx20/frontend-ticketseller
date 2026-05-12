@@ -22,7 +22,9 @@
       "Bash(node_modules/.bin/tsc *)",
       "Bash(/home/nestor/.nvm/versions/node/v22.13.1/bin/npm run *)",
       "Bash(~/.nvm/versions/node/v24.13.0/bin/npm run *)",
-      "Bash(export PATH=\"$HOME/.nvm/versions/node/v24.13.0/bin:$PATH\")"
+      "Bash(export PATH=\"$HOME/.nvm/versions/node/v24.13.0/bin:$PATH\")",
+      "Bash(/home/nestor/Programacion/Ing_Software/frontend-ticketseller/node_modules/.bin/tsc *)",
+      "Bash(export PATH=\"/home/nestor/.nvm/versions/node/v24.13.0/bin:$PATH\")"
     ]
   }
 }
