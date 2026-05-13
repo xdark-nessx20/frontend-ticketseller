@@ -38,6 +38,7 @@ export const useCarritoStore = create<CarritoStore>(set => ({
   marcarExpirado: () =>
     set({
       ventaId: null,
+      eventoId: null,
       fechaExpiracion: null,
       asientosSeleccionados: [],
       isExpired: true,

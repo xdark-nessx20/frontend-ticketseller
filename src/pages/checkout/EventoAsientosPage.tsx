@@ -18,6 +18,7 @@ export function EventoAsientosPage() {
     data: asientosEvento,
     isLoading: loadingAsientos,
     isError: errorAsientos,
+    error: asientosError,
   } = useAsientosEvento(id!);
   const { mutate: reservar, isPending } = useReservarAsientos();
 
@@ -146,11 +147,19 @@ export function EventoAsientosPage() {
               onToggle={handleToggleAsiento}
             />
           ) : (
-            <ZonaSelectorPanel
-              precios={precios ?? []}
-              seleccion={seleccion}
-              onSeleccion={setSeleccion}
-            />
+            <>
+              {errorAsientos && (
+                <p className="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  Error al cargar el mapa de asientos:{' '}
+                  {(asientosError as Error)?.message ?? 'Error desconocido'}
+                </p>
+              )}
+              <ZonaSelectorPanel
+                precios={precios ?? []}
+                seleccion={seleccion}
+                onSeleccion={setSeleccion}
+              />
+            </>
           )}
         </div>
 

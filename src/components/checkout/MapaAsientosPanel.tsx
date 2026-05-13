@@ -52,17 +52,27 @@ export function MapaAsientosPanel({
   });
 
   const validSeats = asientos.filter(a => a.estado !== 'INACTIVO' && a.estado !== 'ANULADO');
-  const maxFila = validSeats.reduce((m, a) => Math.max(m, a.fila), 0);
-  const maxColumna = validSeats.reduce((m, a) => Math.max(m, a.columna), 0);
 
-  if (maxFila === 0 || maxColumna === 0) {
+  if (validSeats.length === 0) {
     return <p className="text-sm text-gray-500">No se pudo cargar el mapa de asientos.</p>;
   }
 
-  const grid: Record<string, AsientoConEstadoResponse> = {};
-  asientos.forEach(a => {
-    grid[`${a.fila}-${a.columna}`] = a;
-  });
+  // Group valid seats by fila, sorted by fila and columna
+  const filaMap = new Map<number, AsientoConEstadoResponse[]>();
+  for (const a of validSeats) {
+    if (!filaMap.has(a.fila)) filaMap.set(a.fila, []);
+    filaMap.get(a.fila)!.push(a);
+  }
+  const filas = Array.from(filaMap.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([fila, seats]) => ({
+      fila,
+      seatByCol: new Map(seats.map(s => [s.columna, s])),
+    }));
+
+  const allColumnas = validSeats.map(a => a.columna);
+  const minColumna = Math.min(...allColumnas);
+  const maxColumna = Math.max(...allColumnas);
 
   return (
     <div className="space-y-4">
@@ -72,12 +82,12 @@ export function MapaAsientosPanel({
 
       <div className="overflow-x-auto">
         <div className="inline-block space-y-1 pb-2">
-          {Array.from({ length: maxFila }, (_, i) => i + 1).map(fila => (
+          {filas.map(({ fila, seatByCol }) => (
             <div key={fila} className="flex items-center gap-1">
               <span className="w-5 shrink-0 text-right text-[10px] text-gray-400">{fila}</span>
-              {Array.from({ length: maxColumna }, (_, j) => j + 1).map(col => {
-                const asiento = grid[`${fila}-${col}`];
-                if (!asiento || asiento.estado === 'INACTIVO' || asiento.estado === 'ANULADO') {
+              {Array.from({ length: maxColumna - minColumna + 1 }, (_, j) => minColumna + j).map(col => {
+                const asiento = seatByCol.get(col);
+                if (!asiento) {
                   return <div key={col} className="h-7 w-7 shrink-0" />;
                 }
 

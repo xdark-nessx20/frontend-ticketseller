@@ -60,7 +60,15 @@ export function FormularioPago({ onSubmit, isPending, backendError }: Formulario
   const metodoPago = watch('metodoPago');
 
   function handleValid(data: FormValues) {
-    onSubmit(data as ProcesarPagoRequest);
+    const payload: ProcesarPagoRequest = { metodoPago: data.metodoPago };
+    if (data.metodoPago === 'TARJETA') {
+      payload.numeroTarjeta = data.numeroTarjeta;
+      payload.mesExpiracion = data.mesExpiracion;
+      payload.anioExpiracion = data.anioExpiracion;
+      payload.cvv = data.cvv;
+      payload.titular = data.titular;
+    }
+    onSubmit(payload);
   }
 
   return (

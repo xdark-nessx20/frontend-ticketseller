@@ -1,5 +1,4 @@
 import axios from 'axios';
-import type { Page } from '../types/asiento.types';
 import type {
   AsientoConEstadoResponse,
   CambiarEstadoRequest,
@@ -15,10 +14,8 @@ const api = axios.create({
 export const asientoMantenimientoService = {
   async getAsientosEvento(eventoId: string) {
     const r = await api
-        .get<AsientoConEstadoResponse[] | Page<AsientoConEstadoResponse>>(`/eventos/${eventoId}/asientos`, {
-          params: {size: 5000},
-        });
-    return (Array.isArray(r.data) ? r.data : r.data.content);
+        .get<AsientoConEstadoResponse[]>(`/eventos/${eventoId}/asientos`);
+    return r.data;
   },
 
   async cambiarEstado(eventoId: string, asientoId: string, data: CambiarEstadoRequest) {
