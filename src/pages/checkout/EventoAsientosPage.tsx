@@ -87,7 +87,7 @@ export function EventoAsientosPage() {
   const resumenItems = seleccion
     ? hasMapa
       ? (seleccion.asientosNumeros ?? []).map(num => ({
-          descripcion: `${seleccion.zonaNombre} · Asiento ${num}`,
+          descripcion: `Asiento ${num}`,
           cantidad: 1,
           subtotal: seleccion.precioUnitario,
         }))

@@ -64,7 +64,7 @@ export function MapaAsientosPanel({
     filaMap.get(a.fila)!.push(a);
   }
   const filas = Array.from(filaMap.entries())
-    .sort(([a], [b]) => a - b)
+    .sort(([a], [b]) => String(a).localeCompare(String(b), undefined, { numeric: true }))
     .map(([fila, seats]) => ({
       fila,
       seatByCol: new Map(seats.map(s => [s.columna, s])),
@@ -143,9 +143,8 @@ export function MapaAsientosPanel({
                 className="h-3 w-3 shrink-0 rounded-full"
                 style={{ backgroundColor: ZONA_PALETTE[i % ZONA_PALETTE.length] }}
               />
-              <span className="text-xs text-gray-600">
-                {precio.zonaNombre} · ${precio.precio.toLocaleString('es-CO')}
-              </span>
+              <span className="text-xs font-medium text-gray-700">{precio.zonaNombre}</span>
+              <span className="text-xs text-gray-500">${precio.precio.toLocaleString('es-CO')}</span>
             </div>
           ))}
         </div>
