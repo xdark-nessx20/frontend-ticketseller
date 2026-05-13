@@ -11,7 +11,8 @@ const api = axios.create({
 
 export const checkoutService = {
   reservarAsientos(data: ReservarAsientosRequest) {
-    return api.post<VentaDetalleResponse>('/checkout/reservar', data).then(r => r.data);
+    const { eventoId, ...body } = data;
+    return api.post<VentaDetalleResponse>(`/eventos/${eventoId}/asientos/reservar`, body).then(r => r.data);
   },
 
   procesarPago(ventaId: string, data: ProcesarPagoRequest) {

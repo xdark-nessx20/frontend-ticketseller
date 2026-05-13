@@ -1,6 +1,7 @@
 export type EstadoVenta = 'PENDIENTE' | 'RESERVADA' | 'COMPLETADA' | 'EXPIRADA' | 'CANCELADA' | 'REEMBOLSADA';
 export type EstadoTicket = 'USADO' | 'VENDIDO' | 'CANCELADO' | 'REEMBOLSO_PENDIENTE' | 'REEMBOLSADO' | 'ANULADO';
 export type MetodoPago = 'TARJETA' | 'NEQUI' | 'DAVIPLATA' | 'PSE' | 'OTRO';
+export type TipoUsuario = 'VIP' | 'GENERAL' | 'PRENSA' | 'PATROCINADOR';
 
 export interface VentaResponse {
     id: string;
@@ -34,13 +35,18 @@ export interface SeleccionZona {
     zonaNombre: string;
     cantidad: number;
     precioUnitario: number;
+    asientoIds?: string[];
+    asientosNumeros?: string[];
 }
 
 export interface ReservarAsientosRequest {
     eventoId: string;
+    compradorId: string;
     zonaId: string;
     cantidad: number;
+    esCortesia?: boolean;
     asientoIds?: string[];
+    tipoUsuario: TipoUsuario;
 }
 
 export interface ProcesarPagoRequest {
