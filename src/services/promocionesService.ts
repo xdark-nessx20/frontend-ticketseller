@@ -15,35 +15,43 @@ const api = axios.create({
 });
 
 export const promocionesService = {
-  getPromociones(eventoId: string) {
-    return api.get<PromocionResponse[]>('/admin/promociones', { params: { eventoId } }).then(r => r.data);
+  async getPromociones(eventoId: string) {
+    const r = await api.get<PromocionResponse[]>('/admin/promociones', {params: {eventoId}});
+    return r.data;
   },
 
-  crearPromocion(data: CrearPromocionRequest) {
-    return api.post<PromocionResponse>('/admin/promociones', data).then(r => r.data);
+  async crearPromocion(data: CrearPromocionRequest) {
+    const r = await api.post<PromocionResponse>('/admin/promociones', data);
+    return r.data;
   },
 
-  actualizarEstado(promocionId: string, data: ActualizarEstadoPromocionRequest) {
-    return api.patch<PromocionResponse>(`/admin/promociones/${promocionId}/estado`, data).then(r => r.data);
+  async actualizarEstado(promocionId: string, data: ActualizarEstadoPromocionRequest) {
+    const r = await api.patch<PromocionResponse>(`/admin/promociones/${promocionId}/estado`, data);
+    return r.data;
   },
 
-  crearCodigos(promocionId: string, data: CrearCodigosRequest) {
-    return api.post<void>(`/admin/promociones/${promocionId}/codigos`, data).then(r => r.data);
+  async crearCodigos(promocionId: string, data: CrearCodigosRequest) {
+    const r = await api.post<void>(`/admin/promociones/${promocionId}/codigos`, data);
+    return r.data;
   },
 
-  obtenerCodigos(promocionId: string){
-    return api.get<CodigoPromocionalResponse[]>(`/admin/promociones/${promocionId}/codigos`).then(r => r.data);
+  async obtenerCodigos(promocionId: string) {
+    const r = await api.get<CodigoPromocionalResponse[]>(`/admin/promociones/${promocionId}/codigos`);
+    return r.data;
   },
 
-  getDescuentos(promocionId: string) {
-    return api.get<DescuentoResponse[]>(`/admin/promociones/${promocionId}/descuentos`).then(r => r.data);
+  async getDescuentos(promocionId: string) {
+    const r = await api.get<DescuentoResponse[]>(`/admin/promociones/${promocionId}/descuentos`);
+    return r.data;
   },
 
-  crearDescuento(promocionId: string, data: CrearDescuentoRequest) {
-    return api.post<DescuentoResponse>(`/admin/promociones/${promocionId}/descuentos`, data).then(r => r.data);
+  async crearDescuento(promocionId: string, data: CrearDescuentoRequest) {
+    const r = await api.post<DescuentoResponse>(`/admin/promociones/${promocionId}/descuentos`, data);
+    return r.data;
   },
 
-  aplicarCodigo(data: AplicarCodigoRequest) {
-    return api.post<DescuentoAplicadoResponse>('/compras/carrito/aplicar-codigo', data).then(r => r.data);
+  async aplicarCodigo(data: AplicarCodigoRequest) {
+    const r = await api.post<DescuentoAplicadoResponse>('/compras/carrito/aplicar-codigo', data);
+    return r.data;
   },
 };

@@ -10,16 +10,19 @@ const api = axios.create({
 });
 
 export const checkoutService = {
-  reservarAsientos(data: ReservarAsientosRequest) {
-    const { eventoId, ...body } = data;
-    return api.post<VentaDetalleResponse>(`/eventos/${eventoId}/asientos/reservar`, body).then(r => r.data);
+  async reservarAsientos(data: ReservarAsientosRequest) {
+    const {eventoId, ...body} = data;
+    const r = await api.post<VentaDetalleResponse>(`/eventos/${eventoId}/asientos/reservar`, body);
+    return r.data;
   },
 
-  procesarPago(ventaId: string, data: ProcesarPagoRequest) {
-    return api.post<VentaDetalleResponse>(`/checkout/${ventaId}/pagar`, data).then(r => r.data);
+  async procesarPago(ventaId: string, data: ProcesarPagoRequest) {
+    const r = await api.post<VentaDetalleResponse>(`/checkout/${ventaId}/pagar`, data);
+    return r.data;
   },
 
-  getVenta(ventaId: string) {
-    return api.get<VentaDetalleResponse>(`/checkout/${ventaId}`).then(r => r.data);
+  async getVenta(ventaId: string) {
+    const r = await api.get<VentaDetalleResponse>(`/checkout/${ventaId}`);
+    return r.data;
   },
 };
