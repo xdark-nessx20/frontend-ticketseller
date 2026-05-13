@@ -7,7 +7,7 @@ import { VentaEstadoBadge } from '../../components/checkout/VentaEstadoBadge';
 export function ConfirmacionPage() {
   const { ventaId } = useParams<{ ventaId: string }>();
   const { data: detalle, isLoading } = useVenta(ventaId!);
-  const { data: precios } = usePreciosZona(detalle?.venta.eventoId ?? '');
+  const { data: precios } = usePreciosZona(detalle?.eventoId ?? '');
 
   if (isLoading) {
     return (
@@ -27,7 +27,6 @@ export function ConfirmacionPage() {
     );
   }
 
-  const { venta, tickets } = detalle;
   const zonaMap = new Map((precios ?? []).map(p => [p.zonaId, p.zonaNombre]));
 
   return (
@@ -42,18 +41,18 @@ export function ConfirmacionPage() {
       <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4">
         <div>
           <p className="text-xs font-medium uppercase text-gray-400">Referencia</p>
-          <p className="font-mono text-sm font-medium text-gray-800">{venta.id}</p>
+          <p className="font-mono text-sm font-medium text-gray-800">{detalle.id}</p>
         </div>
         <div className="text-right">
           <p className="text-xs font-medium uppercase text-gray-400">Total pagado</p>
-          <p className="text-lg font-bold text-[#413383]">${venta.total.toLocaleString('es-CO')}</p>
+          <p className="text-lg font-bold text-[#413383]">${detalle.total.toLocaleString('es-CO')}</p>
         </div>
-        <VentaEstadoBadge estado={venta.estado} />
+        <VentaEstadoBadge estado={detalle.estado} />
       </div>
 
       <div className="space-y-3">
         <h2 className="font-semibold text-gray-800">
-          Tus tickets ({tickets.length})
+          Tus tickets ({detalle.tickets.length})
         </h2>
         {tickets.map(ticket => (
           <TicketConfirmado

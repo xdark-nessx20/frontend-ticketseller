@@ -15,12 +15,12 @@ export function CheckoutPage() {
   const navigate = useNavigate();
 
   const { data: detalle, isLoading } = useVenta(ventaId!);
-  const { data: precios } = usePreciosZona(detalle?.venta.eventoId ?? '');
+  const { data: precios } = usePreciosZona(detalle?.eventoId ?? '');
   const { mutate: pagar, isPending } = useProcesarPago(ventaId!);
   const [backendError, setBackendError] = useState<string | undefined>();
 
   useEffect(() => {
-    if (detalle?.venta.estado === 'COMPLETADA') {
+    if (detalle?.estado === 'COMPLETADA') {
       navigate(`/checkout/${ventaId}/confirmacion`, { replace: true });
     }
   }, [detalle, navigate, ventaId]);
@@ -43,9 +43,7 @@ export function CheckoutPage() {
     );
   }
 
-  const { venta, tickets } = detalle;
-
-  if (venta.estado === 'EXPIRADA') {
+  if (detalle.estado === 'EXPIRADA') {
     return (
       <div className="mx-auto max-w-2xl p-6">
         <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
@@ -54,7 +52,7 @@ export function CheckoutPage() {
             El tiempo para completar el pago ha expirado y los asientos fueron liberados.
           </p>
           <button
-            onClick={() => navigate(`/eventos/${venta.eventoId}/asientos`)}
+            onClick={() => navigate(`/eventos/${detalle.eventoId}/asientos`)}
             className="mt-5 rounded-md bg-[#413383] px-4 py-2 text-sm font-medium text-white hover:bg-[#362B6E]"
           >
             Volver a seleccionar asientos
@@ -65,7 +63,7 @@ export function CheckoutPage() {
   }
 
   const zonaMap = new Map((precios ?? []).map(p => [p.zonaId, p.zonaNombre]));
-  const ticketGroups = tickets.reduce<Map<string, { nombre: string; count: number; total: number }>>(
+  const ticketGroups = detalle.tickets.reduce<Map<string, { nombre: string; count: number; total: number }>>(
     (acc, t) => {
       const entry = acc.get(t.zonaId) ?? {
         nombre: zonaMap.get(t.zonaId) ?? t.zonaId,
@@ -106,12 +104,12 @@ export function CheckoutPage() {
     <div className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Checkout</h1>
-        <VentaEstadoBadge estado={venta.estado} />
+        <VentaEstadoBadge estado={detalle.estado} />
       </div>
 
-      <CarritoCountdown fechaExpiracion={venta.fechaExpiracion} />
+      <CarritoCountdown fechaExpiracion={detalle.fechaExpiracion} />
 
-      <ResumenCarrito items={resumenItems} total={venta.total} />
+      <ResumenCarrito items={resumenItems} total={detalle.total} />
 
       <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-semibold text-gray-800">Datos de pago</h2>

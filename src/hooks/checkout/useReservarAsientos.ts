@@ -12,9 +12,9 @@ export function useReservarAsientos() {
   return useMutation({
     mutationFn: (data: ReservarAsientosRequest) => checkoutService.reservarAsientos(data),
     onSuccess: detalle => {
-      setReserva(detalle.venta.id, detalle.venta.fechaExpiracion);
+      setReserva(detalle.id, detalle.fechaExpiracion);
       sileo.success({ title: 'Reserva creada', description: 'Tienes 15 minutos para completar tu compra.' });
-      navigate(`/checkout/${detalle.venta.id}`);
+      navigate(`/checkout/${detalle.id}`);
     },
     onError: () => {
       sileo.error({ title: 'Error al reservar', description: 'No se pudieron reservar los asientos. Intenta de nuevo.' });

@@ -25,8 +25,7 @@ export interface TicketResponse {
     esCortesia: boolean;
 }
 
-export interface VentaDetalleResponse {
-    venta: VentaResponse;
+export interface VentaDetalleResponse extends VentaResponse {
     tickets: TicketResponse[];
 }
 

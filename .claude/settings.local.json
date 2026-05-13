@@ -26,7 +26,8 @@
       "Bash(/home/nestor/Programacion/Ing_Software/frontend-ticketseller/node_modules/.bin/tsc *)",
       "Bash(export PATH=\"/home/nestor/.nvm/versions/node/v24.13.0/bin:$PATH\")",
       "Bash(/home/nestor/.nvm/versions/node/v24.13.0/lib/node_modules/npm/bin/npm run *)",
-      "Bash(./node_modules/.bin/tsc --noEmit)"
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(xargs ls *)"
     ]
   }
 }
