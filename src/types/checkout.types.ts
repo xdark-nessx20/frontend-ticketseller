@@ -55,4 +55,5 @@ export interface ProcesarPagoRequest {
     anioExpiracion?: string;
     cvv?: string;
     titular?: string;
+    ip?: string;
 }

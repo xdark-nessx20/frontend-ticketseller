@@ -10,7 +10,11 @@ interface CountdownResult {
 
 function calcularSegundosRestantes(fechaExpiracion: string | null): number {
   if (!fechaExpiracion) return 0;
-  return Math.max(0, Math.floor((new Date(fechaExpiracion).getTime() - Date.now()) / 1000));
+  const iso =
+    fechaExpiracion.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(fechaExpiracion)
+      ? fechaExpiracion
+      : `${fechaExpiracion}Z`;
+  return Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000));
 }
 
 export function useCarritoCountdown(fechaExpiracion: string | null): CountdownResult {

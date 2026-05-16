@@ -11,6 +11,10 @@ npm run lint       # ESLint on all files
 npm run preview    # Serve production build locally
 ```
 
+All npm commands must be run from the project root: `/home/nestor/Programacion/Ing_Software/frontend-ticketseller`.
+
+**Do NOT proactively run `npm run dev`, `npm run build`, or `npm run lint` unless the user explicitly asks.** Never start the dev server to test UI changes. Do NOT ask the user to confirm npm command paths.
+
 No test runner is installed yet. The plans call for Vitest + React Testing Library + MSW — install them before writing tests.
 
 ## Planned Dependencies (not yet installed)

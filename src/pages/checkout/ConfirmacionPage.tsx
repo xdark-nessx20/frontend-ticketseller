@@ -54,7 +54,7 @@ export function ConfirmacionPage() {
         <h2 className="font-semibold text-gray-800">
           Tus tickets ({detalle.tickets.length})
         </h2>
-        {tickets.map(ticket => (
+        {detalle.tickets.map(ticket => (
           <TicketConfirmado
             key={ticket.id}
             ticket={ticket}

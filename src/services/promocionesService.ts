@@ -50,8 +50,8 @@ export const promocionesService = {
     return r.data;
   },
 
-  async aplicarCodigo(data: AplicarCodigoRequest) {
-    const r = await api.post<DescuentoAplicadoResponse>('/compras/carrito/aplicar-codigo', data);
+  async aplicarCodigo(ventaId: string, data: AplicarCodigoRequest) {
+    const r = await api.post<DescuentoAplicadoResponse>(`/compras/${ventaId}/aplicar-codigo`, data);
     return r.data;
   },
 };

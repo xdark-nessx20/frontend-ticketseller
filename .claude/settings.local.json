@@ -27,7 +27,9 @@
       "Bash(export PATH=\"/home/nestor/.nvm/versions/node/v24.13.0/bin:$PATH\")",
       "Bash(/home/nestor/.nvm/versions/node/v24.13.0/lib/node_modules/npm/bin/npm run *)",
       "Bash(./node_modules/.bin/tsc --noEmit)",
-      "Bash(xargs ls *)"
+      "Bash(xargs ls *)",
+      "Bash(/home/nestor/.nvm/versions/node/v22.11.0/bin/npm run *)",
+      "Skill(update-config)"
     ]
   }
 }

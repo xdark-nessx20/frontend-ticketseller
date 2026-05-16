@@ -1,14 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useVenta } from '../../hooks/checkout/useVenta';
 import { useProcesarPago } from '../../hooks/checkout/useProcesarPago';
 import { usePreciosZona } from '../../hooks/eventos/usePreciosZona';
+import { useAplicarCodigo } from '../../hooks/checkout/useAplicarCodigo';
+import { useCarritoStore } from '../../stores/carritoStore';
 import { CarritoCountdown } from '../../components/checkout/CarritoCountdown';
 import { ResumenCarrito } from '../../components/checkout/ResumenCarrito';
 import { FormularioPago } from '../../components/checkout/FormularioPago';
 import { VentaEstadoBadge } from '../../components/checkout/VentaEstadoBadge';
+import { CodigoPromocion } from '../../components/checkout/CodigoPromocion';
 import type { ProcesarPagoRequest } from '../../types/checkout.types';
+import type { DescuentoAplicadoResponse } from '../../types/promociones.types';
 
 export function CheckoutPage() {
   const { ventaId } = useParams<{ ventaId: string }>();
@@ -17,13 +21,16 @@ export function CheckoutPage() {
   const { data: detalle, isLoading } = useVenta(ventaId!);
   const { data: precios } = usePreciosZona(detalle?.eventoId ?? '');
   const { mutate: pagar, isPending } = useProcesarPago(ventaId!);
+  const carritoSelecciones = useCarritoStore(s => s.asientosSeleccionados);
+
+  const { mutate: aplicarCodigo, isPending: isApplyingCode } = useAplicarCodigo(ventaId!);
+  const [descuentoAplicado, setDescuentoAplicado] = useState<DescuentoAplicadoResponse | null>(null);
+  const [codigoError, setCodigoError] = useState<string | undefined>();
   const [backendError, setBackendError] = useState<string | undefined>();
 
-  useEffect(() => {
-    if (detalle?.estado === 'COMPLETADA') {
-      navigate(`/checkout/${ventaId}/confirmacion`, { replace: true });
-    }
-  }, [detalle, navigate, ventaId]);
+  if (detalle?.estado === 'COMPLETADA') {
+    navigate(`/checkout/${ventaId}/confirmacion`, { replace: true });
+  }
 
   if (isLoading) {
     return (
@@ -63,7 +70,8 @@ export function CheckoutPage() {
   }
 
   const zonaMap = new Map((precios ?? []).map(p => [p.zonaId, p.zonaNombre]));
-  const ticketGroups = detalle.tickets.reduce<Map<string, { nombre: string; count: number; total: number }>>(
+  const tickets = detalle.tickets ?? [];
+  const ticketGroups = tickets.reduce<Map<string, { nombre: string; count: number; total: number }>>(
     (acc, t) => {
       const entry = acc.get(t.zonaId) ?? {
         nombre: zonaMap.get(t.zonaId) ?? t.zonaId,
@@ -77,11 +85,38 @@ export function CheckoutPage() {
     },
     new Map(),
   );
-  const resumenItems = [...ticketGroups.values()].map(g => ({
+
+  const fromTickets = [...ticketGroups.values()].map(g => ({
     descripcion: g.nombre,
     cantidad: g.count,
     subtotal: g.total,
   }));
+  const resumenItems =
+    fromTickets.length > 0
+      ? fromTickets
+      : carritoSelecciones.map(s => ({
+          descripcion: s.zonaNombre,
+          cantidad: s.cantidad,
+          subtotal: s.cantidad * s.precioUnitario,
+        }));
+
+  function handleAplicarCodigo(codigo: string) {
+    setCodigoError(undefined);
+    aplicarCodigo(codigo, {
+      onSuccess: data => setDescuentoAplicado(data),
+      onError: err => {
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 404) {
+            setCodigoError('Código no encontrado o inválido.');
+          } else if (err.response?.status === 409) {
+            setCodigoError('El código ya fue utilizado o no aplica para esta compra.');
+          } else {
+            setCodigoError('No se pudo aplicar el código. Intenta de nuevo.');
+          }
+        }
+      },
+    });
+  }
 
   function handlePagar(data: ProcesarPagoRequest) {
     setBackendError(undefined);
@@ -109,7 +144,14 @@ export function CheckoutPage() {
 
       <CarritoCountdown fechaExpiracion={detalle.fechaExpiracion} />
 
-      <ResumenCarrito items={resumenItems} total={detalle.total} />
+      <ResumenCarrito items={resumenItems} total={detalle.total} descuento={descuentoAplicado} />
+
+      <CodigoPromocion
+        onAplicar={handleAplicarCodigo}
+        isPending={isApplyingCode}
+        descuento={descuentoAplicado}
+        error={codigoError}
+      />
 
       <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-semibold text-gray-800">Datos de pago</h2>
