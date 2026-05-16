@@ -1,13 +1,17 @@
 import { useParams, Link } from 'react-router-dom';
 import { useVenta } from '../../hooks/checkout/useVenta';
-import { usePreciosZona } from '../../hooks/eventos/usePreciosZona';
+import { useEvento } from '../../hooks/eventos/useEvento';
+import { useZonas } from '../../hooks/recintos/useZonas';
+import { useCompuertas } from '../../hooks/recintos/useCompuertas';
 import { TicketConfirmado } from '../../components/checkout/TicketConfirmado';
 import { VentaEstadoBadge } from '../../components/checkout/VentaEstadoBadge';
 
 export function ConfirmacionPage() {
   const { ventaId } = useParams<{ ventaId: string }>();
   const { data: detalle, isLoading } = useVenta(ventaId!);
-  const { data: precios } = usePreciosZona(detalle?.eventoId ?? '');
+  const { data: evento } = useEvento(detalle?.eventoId ?? '');
+  const { data: zonas } = useZonas(evento?.recintoId ?? '');
+  const { data: compuertas } = useCompuertas(evento?.recintoId ?? '');
 
   if (isLoading) {
     return (
@@ -27,7 +31,8 @@ export function ConfirmacionPage() {
     );
   }
 
-  const zonaMap = new Map((precios ?? []).map(p => [p.zonaId, p.zonaNombre]));
+  const zonaMap = new Map((zonas ?? []).map(z => [z.id, z.nombre]));
+  const compuertaMap = new Map((compuertas ?? []).map(c => [c.id, c.nombre]));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
@@ -58,15 +63,37 @@ export function ConfirmacionPage() {
           <TicketConfirmado
             key={ticket.id}
             ticket={ticket}
+            eventoNombre={evento?.nombre}
             zonaName={zonaMap.get(ticket.zonaId)}
+            compuertaName={compuertaMap.get(ticket.compuertaId)}
           />
         ))}
       </div>
 
-      <div className="text-center">
+      <div className="flex items-center justify-center gap-6">
         <Link to="/admin/eventos" className="text-sm text-[#413383] hover:underline">
           Volver a eventos
         </Link>
+        {detalle.tickets.some(t => t.codigoQR) && (
+          <button
+            onClick={() => {
+              detalle.tickets.forEach((ticket, index) => {
+                if (!ticket.codigoQR) return;
+                setTimeout(() => {
+                  const link = document.createElement('a');
+                  link.href = `data:image/png;base64,${ticket.codigoQR}`;
+                  link.download = `ticket-${ticket.id}.png`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }, index * 200);
+              });
+            }}
+            className="rounded-md bg-[#413383] px-4 py-2 text-sm font-medium text-white hover:bg-[#342a6a] active:scale-95"
+          >
+            Descargar QRs
+          </button>
+        )}
       </div>
     </div>
   );
