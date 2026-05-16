@@ -1,8 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useVenta } from '../../hooks/checkout/useVenta';
 import { useEvento } from '../../hooks/eventos/useEvento';
-import { useZonas } from '../../hooks/recintos/useZonas';
-import { useCompuertas } from '../../hooks/recintos/useCompuertas';
 import { TicketConfirmado } from '../../components/checkout/TicketConfirmado';
 import { VentaEstadoBadge } from '../../components/checkout/VentaEstadoBadge';
 
@@ -10,8 +8,6 @@ export function ConfirmacionPage() {
   const { ventaId } = useParams<{ ventaId: string }>();
   const { data: detalle, isLoading } = useVenta(ventaId!);
   const { data: evento } = useEvento(detalle?.eventoId ?? '');
-  const { data: zonas } = useZonas(evento?.recintoId ?? '');
-  const { data: compuertas } = useCompuertas(evento?.recintoId ?? '');
 
   if (isLoading) {
     return (
@@ -30,9 +26,6 @@ export function ConfirmacionPage() {
       </div>
     );
   }
-
-  const zonaMap = new Map((zonas ?? []).map(z => [z.id, z.nombre]));
-  const compuertaMap = new Map((compuertas ?? []).map(c => [c.id, c.nombre]));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
@@ -64,8 +57,6 @@ export function ConfirmacionPage() {
             key={ticket.id}
             ticket={ticket}
             eventoNombre={evento?.nombre}
-            zonaName={zonaMap.get(ticket.zonaId)}
-            compuertaName={compuertaMap.get(ticket.compuertaId)}
           />
         ))}
       </div>

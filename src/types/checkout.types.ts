@@ -1,5 +1,5 @@
 export type EstadoVenta = 'PENDIENTE' | 'RESERVADA' | 'COMPLETADA' | 'EXPIRADA' | 'CANCELADA' | 'REEMBOLSADA';
-export type EstadoTicket = 'USADO' | 'VENDIDO' | 'CANCELADO' | 'REEMBOLSO_PENDIENTE' | 'REEMBOLSADO' | 'ANULADO';
+export type EstadoTicket = 'VENDIDO' | 'CANCELADO' | 'REEMBOLSO_PENDIENTE' | 'REEMBOLSADO' | 'ANULADO';
 export type MetodoPago = 'TARJETA' | 'NEQUI' | 'DAVIPLATA' | 'PSE' | 'OTRO';
 export type TipoUsuario = 'VIP' | 'GENERAL' | 'PRENSA' | 'PATROCINADOR';
 
@@ -17,8 +17,9 @@ export interface TicketResponse {
     id: string;
     ventaId: string;
     eventoId: string;
-    zonaId: string;
-    compuertaId: string;
+    zonaNombre: string;
+    compuertaNombre: string;
+    numeroAsiento: string;
     codigoQr: string;
     estado: EstadoTicket;
     precio: number;

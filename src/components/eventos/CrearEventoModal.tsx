@@ -12,6 +12,7 @@ const schema = z
     fechaInicio: z.string().min(1, 'Requerido'),
     fechaFin: z.string().min(1, 'Requerido'),
     recintoId: z.string().min(1, 'Seleccione un recinto'),
+    reingresoHabilitado: z.boolean(),
   })
   .refine(d => d.fechaFin > d.fechaInicio, {
     message: 'La fecha de fin debe ser posterior al inicio',
@@ -33,7 +34,7 @@ export function CrearEventoModal({ onClose }: CrearEventoModalProps) {
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { reingresoHabilitado: false } });
 
   const tipoField = register('tipo');
 
@@ -45,6 +46,7 @@ export function CrearEventoModal({ onClose }: CrearEventoModalProps) {
         fechaInicio: data.fechaInicio + ':00',
         fechaFin: data.fechaFin + ':00',
         recintoId: data.recintoId,
+        reingresoHabilitado: data.reingresoHabilitado,
       },
       {
         onSuccess: onClose,
@@ -137,6 +139,15 @@ export function CrearEventoModal({ onClose }: CrearEventoModalProps) {
               <p className="mt-1 text-xs text-red-600">{errors.recintoId.message}</p>
             )}
           </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              {...register('reingresoHabilitado')}
+              className="h-4 w-4 rounded border-gray-300 text-[#413383] focus:ring-[#413383]"
+            />
+            Permitir reingreso al evento
+          </label>
 
           {errors.root && (
             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">

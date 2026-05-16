@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useVenta } from '../../hooks/checkout/useVenta';
 import { useProcesarPago } from '../../hooks/checkout/useProcesarPago';
-import { usePreciosZona } from '../../hooks/eventos/usePreciosZona';
 import { useAplicarCodigo } from '../../hooks/checkout/useAplicarCodigo';
 import { useCarritoStore } from '../../stores/carritoStore';
 import { CarritoCountdown } from '../../components/checkout/CarritoCountdown';
@@ -19,7 +18,6 @@ export function CheckoutPage() {
   const navigate = useNavigate();
 
   const { data: detalle, isLoading } = useVenta(ventaId!);
-  const { data: precios } = usePreciosZona(detalle?.eventoId ?? '');
   const { mutate: pagar, isPending } = useProcesarPago(ventaId!);
   const carritoSelecciones = useCarritoStore(s => s.asientosSeleccionados);
 
@@ -69,18 +67,13 @@ export function CheckoutPage() {
     );
   }
 
-  const zonaMap = new Map((precios ?? []).map(p => [p.zonaId, p.zonaNombre]));
   const tickets = detalle.tickets ?? [];
   const ticketGroups = tickets.reduce<Map<string, { nombre: string; count: number; total: number }>>(
     (acc, t) => {
-      const entry = acc.get(t.zonaId) ?? {
-        nombre: zonaMap.get(t.zonaId) ?? t.zonaId,
-        count: 0,
-        total: 0,
-      };
+      const entry = acc.get(t.zonaNombre) ?? { nombre: t.zonaNombre, count: 0, total: 0 };
       entry.count += 1;
       entry.total += t.precio;
-      acc.set(t.zonaId, entry);
+      acc.set(t.zonaNombre, entry);
       return acc;
     },
     new Map(),

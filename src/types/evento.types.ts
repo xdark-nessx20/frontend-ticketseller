@@ -10,6 +10,7 @@ export interface EventoResponse {
   recintoId: string;
   estado: EstadoEvento;
   motivoCancelacion: string | null;
+  reingresoHabilitado: boolean;
 }
 
 export interface PrecioZonaResponse {
@@ -26,6 +27,7 @@ export interface CrearEventoRequest {
   fechaFin: string;
   tipo: string;
   recintoId: string;
+  reingresoHabilitado?: boolean;
 }
 
 export interface EditarEventoRequest {
@@ -33,6 +35,7 @@ export interface EditarEventoRequest {
   fechaInicio?: string;
   fechaFin?: string;
   tipo?: string;
+  reingresoHabilitado?: boolean;
 }
 
 export interface CancelarEventoRequest {

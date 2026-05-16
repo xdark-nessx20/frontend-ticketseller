@@ -11,6 +11,7 @@ const schema = z
     tipo: z.string().min(1, 'Requerido'),
     fechaInicio: z.string().min(1, 'Requerido'),
     fechaFin: z.string().min(1, 'Requerido'),
+    reingresoHabilitado: z.boolean(),
   })
   .refine(d => d.fechaFin > d.fechaInicio, {
     message: 'La fecha de fin debe ser posterior al inicio',
@@ -43,6 +44,7 @@ export function EditarEventoModal({ evento, onClose }: EditarEventoModalProps) {
       tipo: evento.tipo.toUpperCase(),
       fechaInicio: toDatetimeLocal(evento.fechaInicio),
       fechaFin: toDatetimeLocal(evento.fechaFin),
+      reingresoHabilitado: evento.reingresoHabilitado,
     },
   });
 
@@ -55,6 +57,7 @@ export function EditarEventoModal({ evento, onClose }: EditarEventoModalProps) {
         tipo: data.tipo,
         fechaInicio: data.fechaInicio + ':00',
         fechaFin: data.fechaFin + ':00',
+        reingresoHabilitado: data.reingresoHabilitado,
       },
       {
         onSuccess: onClose,
@@ -127,6 +130,15 @@ export function EditarEventoModal({ evento, onClose }: EditarEventoModalProps) {
               )}
             </div>
           </div>
+
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              {...register('reingresoHabilitado')}
+              className="h-4 w-4 rounded border-gray-300 text-[#413383] focus:ring-[#413383]"
+            />
+            Permitir reingreso al evento
+          </label>
 
           {errors.root && (
             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
