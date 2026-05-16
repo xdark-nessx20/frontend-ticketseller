@@ -27,10 +27,10 @@ export function TicketConfirmado({ ticket, eventoNombre, zonaName, compuertaName
             <p className="text-sm font-semibold text-[#413383]">${ticket.precio.toLocaleString('es-CO')}</p>
           </div>
         </div>
-        {ticket.codigoQR && (
+        {ticket.codigoQr && (
           <div className="flex flex-col items-center gap-1">
             <img
-              src={`data:image/png;base64,${ticket.codigoQR}`}
+              src={`data:image/png;base64,${ticket.codigoQr}`}
               alt="Código QR del ticket"
               className="h-28 w-28 rounded-md border border-gray-200 object-contain"
             />

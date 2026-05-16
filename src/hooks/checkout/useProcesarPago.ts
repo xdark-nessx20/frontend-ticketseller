@@ -12,8 +12,8 @@ export function useProcesarPago(ventaId: string) {
 
   return useMutation({
     mutationFn: (data: ProcesarPagoRequest) => checkoutService.procesarPago(ventaId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['venta', ventaId] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(['venta', ventaId], data);
       clearCarrito();
       sileo.success({ title: 'Pago exitoso', description: 'Tus tickets fueron enviados por email.' });
       navigate(`/checkout/${ventaId}/confirmacion`);

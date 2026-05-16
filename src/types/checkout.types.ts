@@ -19,7 +19,7 @@ export interface TicketResponse {
     eventoId: string;
     zonaId: string;
     compuertaId: string;
-    codigoQR: string;
+    codigoQr: string;
     estado: EstadoTicket;
     precio: number;
     esCortesia: boolean;

@@ -4,6 +4,7 @@ import { useEvento } from '../../hooks/eventos/useEvento';
 import { usePreciosZona } from '../../hooks/eventos/usePreciosZona';
 import { useReservarAsientos } from '../../hooks/checkout/useReservarAsientos';
 import { useAsientosEvento } from '../../hooks/mantenimiento/useAsientosEvento';
+import { useZonas } from '../../hooks/recintos/useZonas';
 import { ZonaSelectorPanel } from '../../components/checkout/ZonaSelectorPanel';
 import { ResumenCarrito } from '../../components/checkout/ResumenCarrito';
 import { MapaAsientosPanel } from '../../components/checkout/MapaAsientosPanel';
@@ -20,6 +21,7 @@ export function EventoAsientosPage() {
     isError: errorAsientos,
     error: asientosError,
   } = useAsientosEvento(id!);
+  const { data: zonas } = useZonas(evento?.recintoId ?? '');
   const { mutate: reservar, isPending } = useReservarAsientos();
 
   const [seleccion, setSeleccion] = useState<SeleccionZona | null>(null);
@@ -48,6 +50,12 @@ export function EventoAsientosPage() {
     );
   }
 
+  const zonaNameMap = new Map((zonas ?? []).map(z => [z.id, z.nombre]));
+  const preciosEnriquecidos = (precios ?? []).map(p => ({
+    ...p,
+    zonaNombre: p.zonaNombre || zonaNameMap.get(p.zonaId) || p.zonaId,
+  }));
+
   function handleToggleAsiento(asiento: AsientoConEstadoResponse) {
     if (asiento.estado !== 'DISPONIBLE') return;
 
@@ -73,7 +81,7 @@ export function EventoAsientosPage() {
     }
 
     const zonaId = next[0].zonaId;
-    const precio = precios?.find(p => p.zonaId === zonaId);
+    const precio = preciosEnriquecidos.find(p => p.zonaId === zonaId);
     setSeleccion({
       zonaId,
       zonaNombre: precio?.zonaNombre ?? zonaId,
@@ -141,7 +149,7 @@ export function EventoAsientosPage() {
           {hasMapa ? (
             <MapaAsientosPanel
               asientos={asientosEvento!}
-              precios={precios ?? []}
+              precios={preciosEnriquecidos}
               seleccionados={asientosSeleccionados.map(a => a.id)}
               zonaSeleccionadaId={seleccion?.zonaId ?? null}
               onToggle={handleToggleAsiento}
@@ -155,7 +163,7 @@ export function EventoAsientosPage() {
                 </p>
               )}
               <ZonaSelectorPanel
-                precios={precios ?? []}
+                precios={preciosEnriquecidos}
                 seleccion={seleccion}
                 onSeleccion={setSeleccion}
               />

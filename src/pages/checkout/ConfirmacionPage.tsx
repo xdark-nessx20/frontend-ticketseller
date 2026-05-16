@@ -74,14 +74,14 @@ export function ConfirmacionPage() {
         <Link to="/admin/eventos" className="text-sm text-[#413383] hover:underline">
           Volver a eventos
         </Link>
-        {detalle.tickets.some(t => t.codigoQR) && (
+        {detalle.tickets.some(t => t.codigoQr) && (
           <button
             onClick={() => {
               detalle.tickets.forEach((ticket, index) => {
-                if (!ticket.codigoQR) return;
+                if (!ticket.codigoQr) return;
                 setTimeout(() => {
                   const link = document.createElement('a');
-                  link.href = `data:image/png;base64,${ticket.codigoQR}`;
+                  link.href = `data:image/png;base64,${ticket.codigoQr}`;
                   link.download = `ticket-${ticket.id}.png`;
                   document.body.appendChild(link);
                   link.click();
