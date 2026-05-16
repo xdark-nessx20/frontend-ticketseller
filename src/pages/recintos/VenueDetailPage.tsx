@@ -6,7 +6,6 @@ import { CapacityConfigModal } from '../../components/recintos/CapacityConfigMod
 import { CategoryConfigModal } from '../../components/recintos/CategoryConfigModal';
 import { ZonePanel } from '../../components/recintos/ZonePanel';
 import { GatePanel } from '../../components/recintos/GatePanel';
-import { VenueStructureView } from '../../components/recintos/VenueStructureView';
 import { TipoAsientoPanel } from '../../components/asientos/TipoAsientoPanel';
 
 type TabActiva = 'estructura' | 'tipos-asiento';
@@ -127,15 +126,9 @@ export function VenueDetailPage() {
 
         <div className="mt-6">
           {tabActiva === 'estructura' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <ZonePanel recintoId={id!} />
-                <GatePanel recintoId={id!} />
-              </div>
-              <div className="rounded-lg border border-gray-200 bg-white p-5">
-                <h2 className="mb-4 text-lg font-semibold text-gray-800">Estructura del recinto</h2>
-                <VenueStructureView recintoId={id!} />
-              </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <ZonePanel recintoId={id!} />
+              <GatePanel recintoId={id!} />
             </div>
           )}
 

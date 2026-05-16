@@ -19,59 +19,73 @@ const api = axios.create({
 });
 
 export const recintosService = {
-  getRecintos(filtros: RecintoFiltros = {}) {
-    return api.get<PageResponse<RecintoResponse>>('/recintos', { params: filtros }).then(r => r.data);
+  async getRecintos(filtros: RecintoFiltros = {}) {
+    const r = await api.get<PageResponse<RecintoResponse>>('/recintos', {params: filtros});
+    return r.data;
   },
 
-  getRecinto(id: string) {
-    return api.get<RecintoResponse>(`/recintos/${id}`).then(r => r.data);
+  async getRecinto(id: string) {
+    const r = await api.get<RecintoResponse>(`/recintos/${id}`);
+    return r.data;
   },
 
-  getEstructura(id: string) {
-    return api.get<RecintoEstructuraResponse>(`/recintos/${id}/estructura`).then(r => r.data);
+  async getEstructura(id: string) {
+    const r = await api.get<RecintoEstructuraResponse>(`/recintos/${id}/estructura`);
+    return r.data;
   },
 
-  createRecinto(data: CrearRecintoRequest) {
-    return api.post<RecintoResponse>('/recintos', data).then(r => r.data);
+  async createRecinto(data: CrearRecintoRequest) {
+    const r = await api.post<RecintoResponse>('/recintos', data);
+    return r.data;
   },
 
-  editRecinto(id: string, data: EditarRecintoRequest) {
-    return api.put<RecintoResponse>(`/recintos/${id}`, data).then(r => r.data);
+  async editRecinto(id: string, data: EditarRecintoRequest) {
+    const r = await api.put<RecintoResponse>(`/recintos/${id}`, data);
+    return r.data;
   },
 
-  desactivarRecinto(id: string) {
-    return api.delete<void>(`/recintos/${id}/desactivar`).then(r => r.data);
+  async desactivarRecinto(id: string) {
+    const r = await api.delete<void>(`/recintos/${id}/desactivar`);
+    return r.data;
   },
 
-  reactivarRecinto(id: string) {
-    return api.patch<void>(`/recintos/${id}/reactivar`).then(r => r.data);
+  async reactivarRecinto(id: string) {
+    const r = await api.patch<void>(`/recintos/${id}/reactivar`);
+    return r.data;
   },
 
-  configurarCapacidad(id: string, data: ConfigurarCapacidadRequest) {
-    return api.patch<RecintoResponse>(`/recintos/${id}/capacidad`, data).then(r => r.data);
+  async configurarCapacidad(id: string, data: ConfigurarCapacidadRequest) {
+    const r = await api.patch<RecintoResponse>(`/recintos/${id}/capacidad`, data);
+    return r.data;
   },
 
-  configurarCategoria(id: string, data: ConfigurarCategoriaRequest) {
-    return api.patch<RecintoResponse>(`/recintos/${id}/categoria`, data).then(r => r.data);
+  async configurarCategoria(id: string, data: ConfigurarCategoriaRequest) {
+    const r = await api.patch<RecintoResponse>(`/recintos/${id}/categoria`, data);
+    return r.data;
   },
 
-  getZonas(recintoId: string) {
-    return api.get<ZonaResponse[]>(`/recintos/${recintoId}/zonas`).then(r => r.data);
+  async getZonas(recintoId: string) {
+    const r = await api.get<ZonaResponse[]>(`/recintos/${recintoId}/zonas`);
+    return r.data;
   },
 
-  createZona(recintoId: string, data: CrearZonaRequest) {
-    return api.post<ZonaResponse>(`/recintos/${recintoId}/zonas`, data).then(r => r.data);
+  async createZona(recintoId: string, data: CrearZonaRequest) {
+    const r = await api.post<ZonaResponse>(`/recintos/${recintoId}/zonas`, data);
+    return r.data;
   },
 
-  getCompuertas(recintoId: string) {
-    return api.get<CompuertaResponse[]>(`/recintos/${recintoId}/compuertas`).then(r => r.data);
+  async getCompuertas(recintoId: string) {
+    const r = await api.get<CompuertaResponse[]>(`/recintos/${recintoId}/compuertas`);
+    return r.data;
   },
 
-  createCompuerta(recintoId: string, data: CrearCompuertaRequest) {
-    return api.post<CompuertaResponse>(`/recintos/${recintoId}/compuertas`, data).then(r => r.data);
+  async createCompuerta(recintoId: string, data: CrearCompuertaRequest) {
+    const r = await api.post<CompuertaResponse>(`/recintos/${recintoId}/compuertas`, data);
+    return r.data;
   },
 
-  asignarCompuertaZona(zonaId: string, compuertaId: string) {
-    return api.patch<CompuertaResponse>(`/recintos/zonas/${zonaId}/compuertas/${compuertaId}`).then(r => r.data);
+  async asignarCompuertaZona(zonaId: string, compuertaId: string) {
+    const r = await api.patch<CompuertaResponse>(`/recintos/zonas/${zonaId}/compuertas/${compuertaId}`);
+    return r.data;
   },
 };

@@ -6,5 +6,6 @@ export function useAsientosEvento(eventoId: string) {
     queryKey: ['eventos', eventoId, 'asientos'],
     queryFn: () => asientoMantenimientoService.getAsientosEvento(eventoId),
     enabled: !!eventoId,
+    retry: false,
   });
 }

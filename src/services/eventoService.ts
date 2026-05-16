@@ -14,39 +14,48 @@ const api = axios.create({
 });
 
 export const eventoService = {
-  getEventos(filtros: EventoFiltros = {}) {
-    return api.get<EventoResponse[]>('/eventos', { params: filtros }).then(r => r.data);
+  async getEventos(filtros: EventoFiltros = {}) {
+    const r = await api.get<EventoResponse[]>('/eventos', {params: filtros});
+    return r.data;
   },
 
-  getEvento(eventoId: string) {
-    return api.get<EventoResponse>(`/eventos/${eventoId}`).then(r => r.data);
+  async getEvento(eventoId: string) {
+    const r = await api.get<EventoResponse>(`/eventos/${eventoId}`);
+    return r.data;
   },
 
-  crearEvento(data: CrearEventoRequest) {
-    return api.post<EventoResponse>('/eventos', data).then(r => r.data);
+  async crearEvento(data: CrearEventoRequest) {
+    const r = await api.post<EventoResponse>('/eventos', data);
+    return r.data;
   },
 
-  editarEvento(eventoId: string, data: EditarEventoRequest) {
-    return api.put<EventoResponse>(`/eventos/${eventoId}`, data).then(r => r.data);
+  async editarEvento(eventoId: string, data: EditarEventoRequest) {
+    const r = await api.put<EventoResponse>(`/eventos/${eventoId}`, data);
+    return r.data;
   },
 
-  iniciarEvento(eventoId: string) {
-    return api.patch<EventoResponse>(`/eventos/${eventoId}/iniciar`).then(r => r.data);
+  async iniciarEvento(eventoId: string) {
+    const r = await api.patch<EventoResponse>(`/eventos/${eventoId}/iniciar`);
+    return r.data;
   },
 
-  finalizarEvento(eventoId: string) {
-    return api.patch<EventoResponse>(`/eventos/${eventoId}/finalizar`).then(r => r.data);
+  async finalizarEvento(eventoId: string) {
+    const r = await api.patch<EventoResponse>(`/eventos/${eventoId}/finalizar`);
+    return r.data;
   },
 
-  cancelarEvento(eventoId: string, data: CancelarEventoRequest) {
-    return api.delete<EventoResponse>(`/eventos/${eventoId}/cancelar`, { data }).then(r => r.data);
+  async cancelarEvento(eventoId: string, data: CancelarEventoRequest) {
+    const r = await api.delete<EventoResponse>(`/eventos/${eventoId}/cancelar`, {data});
+    return r.data;
   },
 
-  getPrecios(eventoId: string) {
-    return api.get<PrecioZonaResponse[]>(`/eventos/${eventoId}/precios`).then(r => r.data);
+  async getPrecios(eventoId: string) {
+    const r = await api.get<PrecioZonaResponse[]>(`/eventos/${eventoId}/precios`);
+    return r.data;
   },
 
-  configurarPrecios(eventoId: string, data: ConfigurarPreciosRequest) {
-    return api.post<PrecioZonaResponse[]>(`/eventos/${eventoId}/precios`, data).then(r => r.data);
+  async configurarPrecios(eventoId: string, data: ConfigurarPreciosRequest) {
+    const r = await api.post<PrecioZonaResponse[]>(`/eventos/${eventoId}/precios`, data);
+    return r.data;
   },
 };

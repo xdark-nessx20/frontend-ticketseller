@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEvento } from '../../hooks/eventos/useEvento';
 import { usePreciosZona } from '../../hooks/eventos/usePreciosZona';
 import { useIniciarEvento } from '../../hooks/eventos/useIniciarEvento';
 import { useFinalizarEvento } from '../../hooks/eventos/useFinalizarEvento';
-import { useZonas } from '../../hooks/recintos/useZonas';
 import { EventoEstadoBadge } from '../../components/eventos/EventoEstadoBadge';
 import { PreciosZonaTable } from '../../components/eventos/PreciosZonaTable';
 import { EditarEventoModal } from '../../components/eventos/EditarEventoModal';
@@ -16,16 +15,6 @@ export function EventoDetallePage() {
   const { id } = useParams<{ id: string }>();
   const { data: evento, isLoading, error } = useEvento(id!);
   const { data: precios, isLoading: loadingPrecios } = usePreciosZona(id!);
-  const { data: zonas } = useZonas(evento?.recintoId ?? '');
-
-  const preciosConNombre = useMemo(() => {
-    if (!precios) return [];
-    const zonaMap = new Map((zonas ?? []).map(z => [z.id, z.nombre]));
-    return precios.map(p => ({
-      ...p,
-      zonaNombre: p.zonaNombre || zonaMap.get(p.zonaId) || '',
-    }));
-  }, [precios, zonas]);
 
   const { mutate: iniciar, isPending: iniciando } = useIniciarEvento(id!);
   const { mutate: finalizar, isPending: finalizando } = useFinalizarEvento(id!);
@@ -137,7 +126,7 @@ export function EventoDetallePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <p className="text-xs font-medium uppercase text-gray-400">Inicio</p>
           <p className="mt-1 text-sm font-semibold text-gray-800">{formatFecha(evento.fechaInicio)}</p>
@@ -156,6 +145,12 @@ export function EventoDetallePage() {
           >
             Ver recinto
           </Link>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <p className="text-xs font-medium uppercase text-gray-400">Reingreso</p>
+          <p className={`mt-1 text-sm font-semibold ${evento.reingresoHabilitado ? 'text-green-600' : 'text-gray-400'}`}>
+            {evento.reingresoHabilitado ? 'Habilitado' : 'No habilitado'}
+          </p>
         </div>
       </div>
 
@@ -182,7 +177,7 @@ export function EventoDetallePage() {
             ))}
           </div>
         ) : (
-          <PreciosZonaTable mode="view" precios={preciosConNombre} />
+          <PreciosZonaTable mode="view" precios={precios ?? []} />
         )}
       </div>
 

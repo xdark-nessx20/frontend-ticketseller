@@ -12,28 +12,27 @@ const api = axios.create({
 });
 
 export const asientoMantenimientoService = {
-  //No existe en backend
-  getAsientosEvento(eventoId: string) {
-    return api
-      .get<AsientoConEstadoResponse[]>(`/eventos/${eventoId}/asientos`)
-      .then(r => r.data);
+  async getAsientosEvento(eventoId: string) {
+    const r = await api
+        .get<AsientoConEstadoResponse[]>(`/eventos/${eventoId}/asientos`);
+    return r.data;
   },
 
-  cambiarEstado(eventoId: string, asientoId: string, data: CambiarEstadoRequest) {
-    return api
-      .patch<AsientoConEstadoResponse>(`/eventos/${eventoId}/asientos/${asientoId}/estado`, data)
-      .then(r => r.data);
+  async cambiarEstado(eventoId: string, asientoId: string, data: CambiarEstadoRequest) {
+    const r = await api
+        .patch<AsientoConEstadoResponse>(`/eventos/${eventoId}/asientos/${asientoId}/estado`, data);
+    return r.data;
   },
 
-  cambiarEstadoMasivo(eventoId: string, data: CambiarEstadoMasivoRequest) {
-    return api
-      .patch<CambiarEstadoMasivoResponse>(`/eventos/${eventoId}/asientos/estado-masivo`, data)
-      .then(r => r.data);
+  async cambiarEstadoMasivo(eventoId: string, data: CambiarEstadoMasivoRequest) {
+    const r = await api
+        .patch<CambiarEstadoMasivoResponse>(`/eventos/${eventoId}/asientos/estado-masivo`, data);
+    return r.data;
   },
 
-  getHistorial(eventoId: string, asientoId: string) {
-    return api
-      .get<HistorialCambioResponse[]>(`/eventos/${eventoId}/asientos/${asientoId}/historial`)
-      .then(r => r.data);
+  async getHistorial(eventoId: string, asientoId: string) {
+    const r = await api
+        .get<HistorialCambioResponse[]>(`/eventos/${eventoId}/asientos/${asientoId}/historial`);
+    return r.data;
   },
 };

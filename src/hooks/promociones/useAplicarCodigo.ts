@@ -4,9 +4,9 @@ import { sileo } from 'sileo';
 import { promocionesService } from '../../services/promocionesService';
 import type { AplicarCodigoRequest } from '../../types/promociones.types';
 
-export function useAplicarCodigo() {
+export function useAplicarCodigo(ventaId: string) {
   return useMutation({
-    mutationFn: (data: AplicarCodigoRequest) => promocionesService.aplicarCodigo(data),
+    mutationFn: (data: AplicarCodigoRequest) => promocionesService.aplicarCodigo(ventaId, data),
     onSuccess: () => {
       sileo.success({ title: 'Código aplicado', description: 'El descuento fue aplicado a tu carrito.' });
     },
