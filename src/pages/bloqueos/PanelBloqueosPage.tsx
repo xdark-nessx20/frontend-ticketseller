@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useBloqueos } from '../../hooks/bloqueos/useBloqueos';
 import { PanelFiltrosBar } from '../../components/bloqueos/PanelFiltrosBar';
 import { PanelBloqueosTable } from '../../components/bloqueos/PanelBloqueosTable';
 import { CrearCortesiaModal } from '../../components/bloqueos/CrearCortesiaModal';
+import { BloquearAsientosConSelectorModal } from '../../components/bloqueos/BloquearAsientosConSelectorModal';
 import type { PanelFiltros } from '../../types/bloqueos.types';
 
 export function PanelBloqueosPage() {
   const { id: eventoId } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [filtros, setFiltros] = useState<PanelFiltros>({});
   const [showCortesia, setShowCortesia] = useState(false);
+  const [showBloqueo, setShowBloqueo] = useState(false);
 
   const { data: items, isLoading, isError } = useBloqueos(eventoId!, filtros);
 
@@ -38,7 +39,7 @@ export function PanelBloqueosPage() {
             filtros={filtros}
             onChange={setFiltros}
             onNuevaCortesia={() => setShowCortesia(true)}
-            onBloquearAsientos={() => navigate(`/admin/eventos/${eventoId}`)}
+            onBloquearAsientos={() => setShowBloqueo(true)}
           />
 
           {isLoading && (
@@ -61,6 +62,10 @@ export function PanelBloqueosPage() {
 
       {showCortesia && (
         <CrearCortesiaModal eventoId={eventoId!} onClose={() => setShowCortesia(false)} />
+      )}
+
+      {showBloqueo && (
+        <BloquearAsientosConSelectorModal eventoId={eventoId!} onClose={() => setShowBloqueo(false)} />
       )}
     </div>
   );

@@ -60,13 +60,13 @@ export function MantenimientoAsientosSection({ eventoId }: MantenimientoAsientos
 
   const filas = useMemo(() => {
     if (!asientos) return [];
-    const mapa = new Map<number, AsientoConEstadoResponse[]>();
+    const mapa = new Map<string | number, AsientoConEstadoResponse[]>();
     for (const a of asientos) {
       if (!mapa.has(a.fila)) mapa.set(a.fila, []);
       mapa.get(a.fila)!.push(a);
     }
     return Array.from(mapa.entries())
-      .sort(([a], [b]) => a - b)
+      .sort(([a], [b]) => String(a).localeCompare(String(b), undefined, { numeric: true }))
       .map(([, celdas]) => celdas.sort((x, y) => x.columna - y.columna));
   }, [asientos]);
 
