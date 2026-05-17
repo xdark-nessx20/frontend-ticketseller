@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useAsientosEvento } from '../../hooks/mantenimiento/useAsientosEvento';
 import { CambiarEstadoModal } from './CambiarEstadoModal';
 import { CambiarEstadoMasivoModal } from './CambiarEstadoMasivoModal';
+import { BloquearAsientosModal } from '../bloqueos/BloquearAsientosModal';
 import type { AsientoConEstadoResponse, EstadoAsiento } from '../../types/mantenimiento.types';
 
 const CELDA_CLASES: Record<EstadoAsiento, string> = {
@@ -53,6 +54,7 @@ export function MantenimientoAsientosSection({ eventoId }: MantenimientoAsientos
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [asientoDetalle, setAsientoDetalle] = useState<AsientoConEstadoResponse | null>(null);
   const [showMasivoModal, setShowMasivoModal] = useState(false);
+  const [showBloqueoModal, setShowBloqueoModal] = useState(false);
 
   const { data: asientos, isLoading, isError } = useAsientosEvento(eventoId);
 
@@ -88,6 +90,12 @@ export function MantenimientoAsientosSection({ eventoId }: MantenimientoAsientos
     setSelectedIds(new Set());
   }
 
+  function handleCloseBloqueoModal() {
+    setShowBloqueoModal(false);
+    setModoSeleccion(false);
+    setSelectedIds(new Set());
+  }
+
   const asientosSeleccionados = asientos?.filter(a => selectedIds.has(a.id)) ?? [];
 
   return (
@@ -108,9 +116,17 @@ export function MantenimientoAsientosSection({ eventoId }: MantenimientoAsientos
                 type="button"
                 disabled={selectedIds.size === 0}
                 onClick={() => setShowMasivoModal(true)}
+                className="rounded-md border border-[#413383] px-3 py-1.5 text-sm text-[#413383] hover:bg-[#413383]/5 disabled:opacity-50"
+              >
+                Cambiar estado ({selectedIds.size})
+              </button>
+              <button
+                type="button"
+                disabled={selectedIds.size === 0}
+                onClick={() => setShowBloqueoModal(true)}
                 className="rounded-md bg-[#413383] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#362B6E] disabled:opacity-50"
               >
-                Cambiar estado a seleccionados ({selectedIds.size})
+                Bloquear seleccionados ({selectedIds.size})
               </button>
             </>
           ) : (
@@ -166,7 +182,7 @@ export function MantenimientoAsientosSection({ eventoId }: MantenimientoAsientos
             </span>
           </div>
 
-          <div className="max-h-[32rem] overflow-auto rounded-lg border border-gray-200 bg-white p-3">
+          <div className="max-h-128 overflow-auto rounded-lg border border-gray-200 bg-white p-3">
             <div className="space-y-1">
               {filas.map(fila => (
                 <div key={fila[0].fila} className="flex items-center gap-1">
@@ -209,6 +225,14 @@ export function MantenimientoAsientosSection({ eventoId }: MantenimientoAsientos
           eventoId={eventoId}
           asientos={asientosSeleccionados}
           onClose={handleCloseMasivoModal}
+        />
+      )}
+
+      {showBloqueoModal && (
+        <BloquearAsientosModal
+          eventoId={eventoId}
+          asientoIds={Array.from(selectedIds)}
+          onClose={handleCloseBloqueoModal}
         />
       )}
     </div>

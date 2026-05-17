@@ -11,6 +11,7 @@ import { PromocionesPage } from './pages/promociones/PromocionesPage';
 import { EventoAsientosPage } from './pages/checkout/EventoAsientosPage';
 import { CheckoutPage } from './pages/checkout/CheckoutPage';
 import { ConfirmacionPage } from './pages/checkout/ConfirmacionPage';
+import { PanelBloqueosPage } from './pages/bloqueos/PanelBloqueosPage';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/admin/eventos" element={<EventosPage />} />
           <Route path="/admin/eventos/:id" element={<EventoDetallePage />} />
           <Route path="/admin/eventos/:eventoId/promociones" element={<PromocionesPage />} />
+          <Route path="/admin/eventos/:id/bloqueos" element={<PanelBloqueosPage />} />
           <Route path="/eventos/:id/asientos" element={<EventoAsientosPage />} />
           <Route path="/checkout/:ventaId" element={<CheckoutPage />} />
           <Route path="/checkout/:ventaId/confirmacion" element={<ConfirmacionPage />} />
