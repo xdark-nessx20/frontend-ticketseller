@@ -14,18 +14,18 @@ con zonas y asientos), feature 002 (asientos) y feature 012 (eventos).
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.x
-**Framework**: React 18+ (Vite)
-**Styling**: Tailwind CSS 3.x
-**Server State**: TanStack Query v5
-**Client State**: Zustand (selección de asientos para bloqueo múltiple)
-**HTTP Client**: Axios
-**Router**: React Router v6
-**Target Platform**: Admin Panel SPA
-**Performance Goals**: Bloqueo de hasta 50 asientos en menos de 2s. Panel de bloqueos carga en menos de 3s.
-**Constraints**: No bloquear asientos ya BLOQUEADOS u OCUPADOS. No crear cortesía para asiento OCUPADO. 0 asientos
-bloqueados vendidos al público.
-**Scale/Scope**: Extiende los features 001, 002 y 012.
+**Language/Version**: TypeScript 5.x  
+**Framework**: React 18+ (Vite)  
+**Styling**: Tailwind CSS 3.x  
+**Server State**: TanStack Query v5  
+**Client State**: Zustand (selección de asientos para bloqueo múltiple)  
+**HTTP Client**: Axios  
+**Router**: React Router v6  
+**Target Platform**: Admin Panel SPA  
+**Performance Goals**: Bloqueo de hasta 50 asientos en menos de 2s. Panel de bloqueos carga en menos de 3s.  
+**Constraints**: Solo bloquear asientos en estado DISPONIBLE. 0 asientos
+bloqueados vendidos al público.  
+**Scale/Scope**: Extiende los features 001, 002 y 012.  
 
 ## TypeScript Types
 
@@ -149,17 +149,17 @@ src/
 
 **⚠️ CRITICAL**: Depende de los features 001, 002 y 012 completados.
 
-- [ ] T001 Definir interfaces en `bloqueos.types.ts`:
+- [x] T001 Definir interfaces en `bloqueos.types.ts`:
     - `BloqueoResponse`, `CortesiaResponse`, `PanelItemResponse`, `PanelFiltros`
     - `BloquearAsientosRequest`, `CrearCortesiaRequest`, `EditarBloqueoRequest`
     - Enums: `EstadoBloqueo`, `EstadoCortesia`, `CategoriaCortesia`, `TipoPanelItem`
-- [ ] T002 Implementar `bloqueosService.ts`:
+- [x] T002 Implementar `bloqueosService.ts`:
     - `getPanel(eventoId, filtros?)` → `GET /api/admin/eventos/{id}/bloqueos`
     - `bloquearAsientos(eventoId, data)` → `POST /api/admin/eventos/{id}/bloqueos`
     - `editarBloqueo(bloqueoId, data)` → `PATCH /api/admin/bloqueos/{id}`
     - `liberarBloqueo(bloqueoId)` → `DELETE /api/admin/bloqueos/{id}`
     - `crearCortesia(eventoId, data)` → `POST /api/admin/eventos/{id}/cortesias`
-- [ ] T003 Definir ruta: `/admin/eventos/:id/bloqueos`
+- [x] T003 Definir ruta: `/admin/eventos/:id/bloqueos`
 
 **Checkpoint**: Tipos definidos, servicio compilando
 
@@ -174,10 +174,10 @@ sistema rechaza asientos ya bloqueados u ocupados.
 El modal muestra los asientos seleccionados, requiere nombre del destinatario. Confirmar cambia el estado de los
 asientos a BLOQUEADO. Intentar bloquear un asiento ya BLOQUEADO muestra error 409.
 
-- [ ] T004 [US1] Implementar `useBloquearAsientos.ts` con `useMutation`: invalida el panel en `onSuccess`
-- [ ] T005 [US1] Implementar `BloquearAsientosModal.tsx`: lista los asientos seleccionados, input destinatario
+- [x] T004 [US1] Implementar `useBloquearAsientos.ts` con `useMutation`: invalida el panel en `onSuccess`
+- [x] T005 [US1] Implementar `BloquearAsientosModal.tsx`: lista los asientos seleccionados, input destinatario
   obligatorio, date picker para fechaExpiracion opcional, manejo de error 409 con mensaje descriptivo
-- [ ] T006 [US1] Integrar el botón "Bloquear seleccionados" en la vista de asientos del evento (reutiliza la
+- [x] T006 [US1] Integrar el botón "Bloquear seleccionados" en la vista de asientos del evento (reutiliza la
   selección múltiple del feature 003 si está disponible)
 
 **Checkpoint**: Bloqueo de asientos funcional con validación de estado
@@ -192,9 +192,9 @@ bloquea automáticamente. Sin asiento, es un ticket de acceso general.
 **Independent Test**: Hacer clic en "Nueva Cortesía" y completar el formulario con asiento asignado. El ticket
 generado aparece en el panel con el código único. Crear cortesía sin asiento muestra badge "Acceso General".
 
-- [ ] T007 [US2] Implementar `useCrearCortesia.ts` con `useMutation`: invalida el panel en `onSuccess`
-- [ ] T008 [US2] Implementar `CortesiaBadge.tsx`: badge con el texto del `CategoriaCortesia` (colores por tipo)
-- [ ] T009 [US2] Implementar `CrearCortesiaModal.tsx`: input destinatario, select categoría, select asiento
+- [x] T007 [US2] Implementar `useCrearCortesia.ts` con `useMutation`: invalida el panel en `onSuccess`
+- [x] T008 [US2] Implementar `CortesiaBadge.tsx`: badge con el texto del `CategoriaCortesia` (colores por tipo)
+- [x] T009 [US2] Implementar `CrearCortesiaModal.tsx`: input destinatario, select categoría, select asiento
   opcional (carga asientos DISPONIBLES del evento), botones cancelar/confirmar
 
 **Checkpoint**: Creación de cortesías funcional con y sin asiento
@@ -210,13 +210,13 @@ Puede editar el destinatario de un bloqueo o liberarlo completamente.
 "CORTESIA" muestra solo cortesías. Hacer clic en "Editar" abre modal para cambiar el destinatario. Hacer clic en
 "Liberar" muestra confirmación y libera el asiento a DISPONIBLE.
 
-- [ ] T010 [US3] Implementar `useBloqueos.ts`, `useEditarBloqueo.ts`, `useLiberarBloqueo.ts`, `useCortesias.ts`
-- [ ] T011 [US3] Implementar `PanelFiltrosBar.tsx`: select tipo (BLOQUEO/CORTESIA), select estado, botón "Nueva
+- [x] T010 [US3] Implementar `useBloqueos.ts`, `useEditarBloqueo.ts`, `useLiberarBloqueo.ts`, `useCortesias.ts`
+- [x] T011 [US3] Implementar `PanelFiltrosBar.tsx`: select tipo (BLOQUEO/CORTESIA), select estado, botón "Nueva
   Cortesía", botón "Bloquear asientos"
-- [ ] T012 [US3] Implementar `PanelBloqueosTable.tsx`: columnas tipo (badge), asiento, destinatario, estado, fecha
+- [x] T012 [US3] Implementar `PanelBloqueosTable.tsx`: columnas tipo (badge), asiento, destinatario, estado, fecha
   creación, acciones (editar, liberar)
-- [ ] T013 [US3] Implementar `EditarBloqueoModal.tsx`: input destinatario precargado, botón guardar
-- [ ] T014 [US3] Implementar `PanelBloqueosPage.tsx`: usa `useBloqueos` y `useCortesias`, renderiza
+- [x] T013 [US3] Implementar `EditarBloqueoModal.tsx`: input destinatario precargado, botón guardar
+- [x] T014 [US3] Implementar `PanelBloqueosPage.tsx`: usa `useBloqueos` y `useCortesias`, renderiza
   `PanelFiltrosBar` + `PanelBloqueosTable`
 
 **Checkpoint**: Panel completo con edición y liberación funcionales
@@ -225,9 +225,9 @@ Puede editar el destinatario de un bloqueo o liberarlo completamente.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T015 Agregar modal de confirmación antes de liberar un bloqueo (acción irreversible)
-- [ ] T016 Mostrar badge "General" en cortesías sin asiento asignado en la tabla
-- [ ] T017 Verificar que al liberar una cortesía con asiento, el mapa de inventario refleja el asiento como
+- [x] T015 Agregar modal de confirmación antes de liberar un bloqueo (acción irreversible)
+- [x] T016 Mostrar badge "General" en cortesías sin asiento asignado en la tabla
+- [x] T017 Verificar que al liberar una cortesía con asiento, el mapa de inventario refleja el asiento como
   DISPONIBLE en el siguiente refresco
 
 ---
