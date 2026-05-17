@@ -30,7 +30,7 @@ export const bloqueosService = {
     },
 
     async liberarBloqueo(bloqueoId: string) {
-        await api.delete(`/admin/bloqueos/${bloqueoId}`);
+        await api.delete(`/admin/bloqueos/${bloqueoId}/liberar`);
     },
 
     async crearCortesia(eventoId: string, data: CrearCortesiaRequest) {
