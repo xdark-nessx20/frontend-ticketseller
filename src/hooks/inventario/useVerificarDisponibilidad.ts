@@ -5,7 +5,7 @@ export function useVerificarDisponibilidad(eventoId: string, asientoId: string) 
   return useQuery({
     queryKey: ['inventario', 'disponibilidad', eventoId, asientoId],
     queryFn: () => inventarioService.verificarDisponibilidad(eventoId, asientoId),
-    enabled: false,
+    enabled: !!asientoId,
     staleTime: 0,
   });
 }

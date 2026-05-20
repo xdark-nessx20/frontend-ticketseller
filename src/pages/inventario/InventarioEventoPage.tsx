@@ -1,15 +1,29 @@
+import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useInventarioEvento } from '../../hooks/inventario/useInventarioEvento';
+import { useEvento } from '../../hooks/eventos/useEvento';
+import { useZonas } from '../../hooks/recintos/useZonas';
 import { InventarioResumen } from '../../components/inventario/InventarioResumen';
 import { InventarioMapaGrid } from '../../components/inventario/InventarioMapaGrid';
 import { VerificarDisponibilidadPanel } from '../../components/inventario/VerificarDisponibilidadPanel';
 import { GestionarAsientoPanel } from '../../components/inventario/GestionarAsientoPanel';
+import type { AsientoInventarioResponse } from '../../types/inventario.types';
 
 export function InventarioEventoPage() {
   const { id: eventoId } = useParams<{ id: string }>();
+  const [asientoSeleccionado, setAsientoSeleccionado] = useState<AsientoInventarioResponse | null>(null);
 
   const { data, isLoading, isError, dataUpdatedAt, refetch, isFetching } =
     useInventarioEvento(eventoId!);
+
+  const { data: evento } = useEvento(eventoId!);
+  const { data: zonas } = useZonas(evento?.recintoId ?? '');
+
+  const zonaNombres = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const z of zonas ?? []) map.set(z.id, z.nombre);
+    return map;
+  }, [zonas]);
 
   const ultimaActualizacion = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString('es-CO', {
@@ -18,6 +32,12 @@ export function InventarioEventoPage() {
         second: '2-digit',
       })
     : null;
+
+  function handleSelectAsiento(asiento: AsientoInventarioResponse) {
+    setAsientoSeleccionado(prev =>
+      prev?.asientoId === asiento.asientoId ? null : asiento,
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6">
@@ -73,13 +93,18 @@ export function InventarioEventoPage() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="flex flex-col gap-6 lg:col-span-1">
-              <VerificarDisponibilidadPanel eventoId={eventoId!} />
-              <GestionarAsientoPanel eventoId={eventoId!} />
+              <VerificarDisponibilidadPanel eventoId={eventoId!} asiento={asientoSeleccionado} />
+              <GestionarAsientoPanel eventoId={eventoId!} asiento={asientoSeleccionado} />
             </div>
             <div className="lg:col-span-2">
               <div className="rounded-lg border border-gray-200 bg-white p-5">
                 <h2 className="mb-4 text-base font-semibold text-gray-800">Mapa de asientos</h2>
-                <InventarioMapaGrid asientos={data} />
+                <InventarioMapaGrid
+                  asientos={data}
+                  zonaNombres={zonaNombres}
+                  asientoSeleccionadoId={asientoSeleccionado?.asientoId}
+                  onSelectAsiento={handleSelectAsiento}
+                />
               </div>
             </div>
           </div>

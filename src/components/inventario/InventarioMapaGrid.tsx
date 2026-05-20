@@ -13,9 +13,17 @@ const SEATS_PER_ROW_ESTIMATE = 12;
 
 interface InventarioMapaGridProps {
   asientos: AsientoInventarioResponse[];
+  zonaNombres: Map<string, string>;
+  asientoSeleccionadoId?: string;
+  onSelectAsiento: (asiento: AsientoInventarioResponse) => void;
 }
 
-export function InventarioMapaGrid({ asientos }: InventarioMapaGridProps) {
+export function InventarioMapaGrid({
+  asientos,
+  zonaNombres,
+  asientoSeleccionadoId,
+  onSelectAsiento,
+}: InventarioMapaGridProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rows = useMemo<VirtualRow[]>(() => {
@@ -90,13 +98,18 @@ export function InventarioMapaGrid({ asientos }: InventarioMapaGridProps) {
                 {row.type === 'zone-header' ? (
                   <div className="flex h-full items-center border-b border-gray-100 pb-1">
                     <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      Zona: {row.zonaId}
+                      {zonaNombres.get(row.zonaId) ?? row.zonaId}
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1 pt-1">
                     {row.seats.map(celda => (
-                      <AsientoInventarioCelda key={celda.asientoId} asiento={celda} />
+                      <AsientoInventarioCelda
+                        key={celda.asientoId}
+                        asiento={celda}
+                        isSelected={celda.asientoId === asientoSeleccionadoId}
+                        onClick={() => onSelectAsiento(celda)}
+                      />
                     ))}
                   </div>
                 )}

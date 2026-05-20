@@ -2,6 +2,8 @@ import type { AsientoInventarioResponse } from '../../types/inventario.types';
 
 interface AsientoInventarioCeldaProps {
   asiento: AsientoInventarioResponse;
+  isSelected?: boolean;
+  onClick?: () => void;
 }
 
 function resolverClases(estado: string): string {
@@ -24,11 +26,12 @@ function resolverClases(estado: string): string {
   }
 }
 
-export function AsientoInventarioCelda({ asiento }: AsientoInventarioCeldaProps) {
+export function AsientoInventarioCelda({ asiento, isSelected = false, onClick }: AsientoInventarioCeldaProps) {
   return (
     <div
       title={`${asiento.numeroAsiento} — ${asiento.estado}`}
-      className={`flex h-11 w-9 shrink-0 items-center justify-center rounded text-[9px] font-medium ${resolverClases(asiento.estado)}`}
+      onClick={onClick}
+      className={`flex h-11 w-9 shrink-0 cursor-pointer items-center justify-center rounded text-[9px] font-medium transition-shadow ${resolverClases(asiento.estado)} ${isSelected ? 'ring-2 ring-[#413383] ring-offset-1' : 'hover:ring-2 hover:ring-[#413383]/40 hover:ring-offset-1'}`}
     >
       <span>{asiento.numeroAsiento}</span>
     </div>
