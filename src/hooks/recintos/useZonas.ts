@@ -6,5 +6,6 @@ export function useZonas(recintoId: string) {
     queryKey: ['recintos', recintoId, 'zonas'],
     queryFn: () => recintosService.getZonas(recintoId),
     enabled: !!recintoId,
+    staleTime: Infinity,
   });
 }
