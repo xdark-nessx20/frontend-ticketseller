@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { AsientoInventarioResponse, DisponibilidadResponse } from '../types/inventario.types';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
 });
 
 export const inventarioService = {
@@ -19,12 +19,12 @@ export const inventarioService = {
   },
 
   async ocuparAsiento(eventoId: string, asientoId: string) {
-    const r = await api.post(`/eventos/${eventoId}/asientos/${asientoId}/ocupar`);
+    const r = await api.patch<DisponibilidadResponse>(`/eventos/${eventoId}/asientos/${asientoId}/ocupar`);
     return r.data;
   },
 
   async liberarAsiento(eventoId: string, asientoId: string) {
-    const r = await api.post(`/eventos/${eventoId}/asientos/${asientoId}/liberar`);
+    const r = await api.patch<DisponibilidadResponse>(`/eventos/${eventoId}/asientos/${asientoId}/liberar`);
     return r.data;
   },
 };
