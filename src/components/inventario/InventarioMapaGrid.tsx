@@ -35,7 +35,10 @@ export function InventarioMapaGrid({
     const result: VirtualRow[] = [];
     for (const [zonaId, seats] of zonas) {
       result.push({ type: 'zone-header', zonaId });
-      result.push({ type: 'seats', zonaId, seats });
+      const sorted = [...seats].sort((a, b) =>
+        a.numeroAsiento.localeCompare(b.numeroAsiento, undefined, { numeric: true, sensitivity: 'base' }),
+      );
+      result.push({ type: 'seats', zonaId, seats: sorted });
     }
     return result;
   }, [asientos]);
@@ -98,7 +101,7 @@ export function InventarioMapaGrid({
                 {row.type === 'zone-header' ? (
                   <div className="flex h-full items-center border-b border-gray-100 pb-1">
                     <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                      {zonaNombres.get(row.zonaId) ?? row.zonaId}
+                      Zona: {zonaNombres.get(row.zonaId) ?? row.zonaId}
                     </span>
                   </div>
                 ) : (

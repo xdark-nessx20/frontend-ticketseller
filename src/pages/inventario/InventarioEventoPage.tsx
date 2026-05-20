@@ -5,8 +5,7 @@ import { useEvento } from '../../hooks/eventos/useEvento';
 import { useZonas } from '../../hooks/recintos/useZonas';
 import { InventarioResumen } from '../../components/inventario/InventarioResumen';
 import { InventarioMapaGrid } from '../../components/inventario/InventarioMapaGrid';
-import { VerificarDisponibilidadPanel } from '../../components/inventario/VerificarDisponibilidadPanel';
-import { GestionarAsientoPanel } from '../../components/inventario/GestionarAsientoPanel';
+import { AsientoPanel } from '../../components/inventario/AsientoPanel';
 import type { AsientoInventarioResponse } from '../../types/inventario.types';
 
 export function InventarioEventoPage() {
@@ -92,9 +91,8 @@ export function InventarioEventoPage() {
           <InventarioResumen asientos={data} />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="flex flex-col gap-6 lg:col-span-1">
-              <VerificarDisponibilidadPanel eventoId={eventoId!} asiento={asientoSeleccionado} />
-              <GestionarAsientoPanel eventoId={eventoId!} asiento={asientoSeleccionado} />
+            <div className="lg:col-span-1">
+              <AsientoPanel eventoId={eventoId!} asiento={asientoSeleccionado} />
             </div>
             <div className="lg:col-span-2">
               <div className="rounded-lg border border-gray-200 bg-white p-5">

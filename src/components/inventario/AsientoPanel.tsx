@@ -1,26 +1,28 @@
-import { useState } from 'react';
+import { useVerificarDisponibilidad } from '../../hooks/inventario/useVerificarDisponibilidad';
 import { useOcuparAsiento } from '../../hooks/inventario/useOcuparAsiento';
 import { useLiberarAsiento } from '../../hooks/inventario/useLiberarAsiento';
 import type { AsientoInventarioResponse } from '../../types/inventario.types';
 
-interface GestionarAsientoPanelProps {
+interface AsientoPanelProps {
   eventoId: string;
   asiento: AsientoInventarioResponse | null;
 }
 
-type Accion = 'ocupar' | 'liberar' | null;
-
-export function GestionarAsientoPanel({ eventoId, asiento }: GestionarAsientoPanelProps) {
-  const [ultimaAccion, setUltimaAccion] = useState<Accion>(null);
+export function AsientoPanel({ eventoId, asiento }: AsientoPanelProps) {
+  const { data: disponibilidad, isFetching: isVerificando, refetch } = useVerificarDisponibilidad(
+    eventoId,
+    asiento?.asientoId ?? '',
+  );
 
   const ocupar = useOcuparAsiento(eventoId);
   const liberar = useLiberarAsiento(eventoId);
-
   const isPending = ocupar.isPending || liberar.isPending;
+
+  const estadoActual = disponibilidad?.estado ?? asiento?.estado ?? '';
+  const esDisponible = estadoActual === 'DISPONIBLE';
 
   function handleOcupar() {
     if (!asiento) return;
-    setUltimaAccion('ocupar');
     ocupar.reset();
     liberar.reset();
     ocupar.mutate(asiento.asientoId);
@@ -28,28 +30,38 @@ export function GestionarAsientoPanel({ eventoId, asiento }: GestionarAsientoPan
 
   function handleLiberar() {
     if (!asiento) return;
-    setUltimaAccion('liberar');
     ocupar.reset();
     liberar.reset();
     liberar.mutate(asiento.asientoId);
   }
 
-  const isSuccess = ultimaAccion === 'ocupar' ? ocupar.isSuccess : liberar.isSuccess;
-  const isError = ultimaAccion === 'ocupar' ? ocupar.isError : liberar.isError;
-
   return (
     <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-5">
-      <h2 className="text-base font-semibold text-gray-800">Gestionar asiento</h2>
-
       {!asiento ? (
         <p className="text-sm text-gray-400">Selecciona un asiento en el mapa.</p>
       ) : (
         <>
-          <p className="text-sm text-gray-600">
-            Asiento <span className="font-medium text-gray-800">{asiento.numeroAsiento}</span>
-            {' — '}
-            <span className="text-gray-500">{asiento.estado}</span>
-          </p>
+          <h2 className="text-base font-semibold text-gray-800">
+            Asiento: {asiento.numeroAsiento}
+          </h2>
+
+          <div className="flex items-center justify-between">
+            <span
+              className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                esDisponible ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+              }`}
+            >
+              {estadoActual}
+            </span>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isVerificando}
+              className="rounded-md bg-[#413383] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#362B6E] disabled:opacity-50"
+            >
+              {isVerificando ? 'Verificando…' : 'Verificar'}
+            </button>
+          </div>
 
           <div className="flex gap-2">
             <button
@@ -69,18 +81,6 @@ export function GestionarAsientoPanel({ eventoId, asiento }: GestionarAsientoPan
               {liberar.isPending ? 'Liberando…' : 'Liberar'}
             </button>
           </div>
-
-          {isSuccess && (
-            <p className="text-sm text-emerald-600">
-              Asiento {ultimaAccion === 'ocupar' ? 'ocupado' : 'liberado'} correctamente.
-            </p>
-          )}
-
-          {isError && (
-            <p className="text-sm text-red-500">
-              No se pudo {ultimaAccion === 'ocupar' ? 'ocupar' : 'liberar'} el asiento.
-            </p>
-          )}
         </>
       )}
     </div>
