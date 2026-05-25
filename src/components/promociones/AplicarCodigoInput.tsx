@@ -3,9 +3,13 @@ import axios from 'axios';
 import { useAplicarCodigo } from '../../hooks/promociones/useAplicarCodigo';
 import { DescuentoAplicadoResumen } from './DescuentoAplicadoResumen';
 
-export function AplicarCodigoInput() {
+interface AplicarCodigoInputProps {
+  ventaId: string;
+}
+
+export function AplicarCodigoInput({ ventaId }: AplicarCodigoInputProps) {
   const [codigo, setCodigo] = useState('');
-  const { mutate, isPending, data: descuentoAplicado, reset } = useAplicarCodigo();
+  const { mutate, isPending, data: descuentoAplicado, reset } = useAplicarCodigo(ventaId);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   function handleAplicar() {
@@ -13,7 +17,7 @@ export function AplicarCodigoInput() {
     setErrorMsg(null);
     reset();
     mutate(
-      { codigo: codigo.trim() },
+      codigo.trim(),
       {
         onError: err => {
           if (axios.isAxiosError(err) && err.response?.status === 409) {

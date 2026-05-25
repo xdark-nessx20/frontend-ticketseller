@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useVenta } from '../../hooks/checkout/useVenta';
 import { useProcesarPago } from '../../hooks/checkout/useProcesarPago';
 import { useAplicarCodigo } from '../../hooks/checkout/useAplicarCodigo';
+import { useCalcularDescuentosCarrito } from '../../hooks/checkout/useCalcularDescuentosCarrito';
 import { useCarritoStore } from '../../stores/carritoStore';
 import { CarritoCountdown } from '../../components/checkout/CarritoCountdown';
 import { ResumenCarrito } from '../../components/checkout/ResumenCarrito';
@@ -21,8 +22,10 @@ export function CheckoutPage() {
   const { mutate: pagar, isPending } = useProcesarPago(ventaId!);
   const carritoSelecciones = useCarritoStore(s => s.asientosSeleccionados);
 
+  const { data: descuentoCarrito } = useCalcularDescuentosCarrito(detalle?.eventoId ?? '');
   const { mutate: aplicarCodigo, isPending: isApplyingCode } = useAplicarCodigo(ventaId!);
-  const [descuentoAplicado, setDescuentoAplicado] = useState<DescuentoAplicadoResponse | null>(null);
+  const [descuentoManual, setDescuentoManual] = useState<DescuentoAplicadoResponse | null>(null);
+  const descuentoAplicado = descuentoManual ?? descuentoCarrito ?? null;
   const [codigoError, setCodigoError] = useState<string | undefined>();
   const [backendError, setBackendError] = useState<string | undefined>();
 
@@ -96,7 +99,7 @@ export function CheckoutPage() {
   function handleAplicarCodigo(codigo: string) {
     setCodigoError(undefined);
     aplicarCodigo(codigo, {
-      onSuccess: data => setDescuentoAplicado(data),
+      onSuccess: data => setDescuentoManual(data),
       onError: err => {
         if (axios.isAxiosError(err)) {
           if (err.response?.status === 404) {

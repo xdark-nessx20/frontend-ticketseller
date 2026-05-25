@@ -13,7 +13,8 @@ interface ResumenCarritoProps {
 }
 
 export function ResumenCarrito({ items, total, descuento }: ResumenCarritoProps) {
-  const totalFinal = descuento ? descuento.totalConDescuento : total;
+  const hayDescuento = !!descuento && descuento.montoDescuento > 0;
+  const totalFinal = hayDescuento ? descuento!.totalFinal : total;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5">
@@ -35,13 +36,23 @@ export function ResumenCarrito({ items, total, descuento }: ResumenCarritoProps)
         </ul>
       )}
 
-      {descuento && (
-        <div className="mt-2 flex items-center justify-between text-sm">
-          <span className="text-green-700">Descuento</span>
-          <span className="font-medium text-green-700">
-            −${descuento.montoDescuento.toLocaleString('es-CO')}
-          </span>
-        </div>
+      {hayDescuento && (
+        <>
+          <div className="mt-3 flex justify-between border-t border-gray-100 pt-3 text-sm">
+            <span className="text-gray-400">Subtotal</span>
+            <span className="text-gray-400 line-through">
+              ${descuento!.subtotalOriginal.toLocaleString('es-CO')}
+            </span>
+          </div>
+          <div className="mt-1 flex items-center justify-between text-sm">
+            <span className="text-green-700">
+              Descuento ({Math.round((descuento!.montoDescuento / descuento!.subtotalOriginal) * 100)}%)
+            </span>
+            <span className="font-medium text-green-700">
+              −${descuento!.montoDescuento.toLocaleString('es-CO')}
+            </span>
+          </div>
+        </>
       )}
 
       <div className="mt-3 flex justify-between border-t border-gray-100 pt-3">

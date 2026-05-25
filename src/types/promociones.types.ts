@@ -34,11 +34,9 @@ export interface DescuentoResponse {
 }
 
 export interface DescuentoAplicadoResponse {
-  descuentoId: string;
-  tipo: TipoDescuento;
-  valor: number;
+  subtotalOriginal: number;
   montoDescuento: number;
-  totalConDescuento: number;
+  totalFinal: number;
 }
 
 export interface CrearPromocionRequest {
