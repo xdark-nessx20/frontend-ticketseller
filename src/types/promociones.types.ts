@@ -61,11 +61,6 @@ export interface CrearCodigosRequest {
   prefijo?: string;
   fechaFin: string;
 }
-
-export interface AplicarCodigoRequest {
-  codigo: string;
-}
-
 export interface ActualizarEstadoPromocionRequest {
   estado: EstadoPromocion;
 }
