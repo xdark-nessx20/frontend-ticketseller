@@ -51,7 +51,7 @@ export function MapaAsientosPanel({
     zonaColorMap[p.zonaId] = ZONA_PALETTE[i % ZONA_PALETTE.length];
   });
 
-  const validSeats = asientos.filter(a => a.estado !== 'INACTIVO' && a.estado !== 'ANULADO');
+  const validSeats = asientos.filter(a => a.estado !== 'INACTIVO');
 
   if (validSeats.length === 0) {
     return <p className="text-sm text-gray-500">No se pudo cargar el mapa de asientos.</p>;

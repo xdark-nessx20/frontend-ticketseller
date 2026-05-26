@@ -5,10 +5,9 @@ import { DescuentosPanel } from './DescuentosPanel';
 import { CodigosPanel } from './CodigosPanel';
 import { GestionarEstadoModal } from './GestionarEstadoModal';
 
-const TIPO_LABELS: Record<string, string> = {
-  PREVENTA: 'Preventa',
-  DESCUENTO: 'Descuento',
-  CODIGOS: 'Códigos',
+const MECANISMO_LABELS: Record<string, string> = {
+  AUTOMATICO: 'Automático',
+  CODIGO: 'Código',
 };
 
 const TIPO_USUARIO_LABELS: Record<string, string> = {
@@ -44,7 +43,7 @@ export function PromocionesTable({ promociones, eventoId, recintoId }: Promocion
           <thead className="bg-gray-200">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Nombre</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-600">Tipo</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-600">Mecanismo</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Inicio</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Fin</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">Estado</th>
@@ -66,7 +65,7 @@ export function PromocionesTable({ promociones, eventoId, recintoId }: Promocion
                   className={`hover:bg-[#EDE9D8] bg-[#F6F3EA]`}
                 >
                   <td className="px-4 py-3 font-medium text-gray-800">{p.nombre}</td>
-                  <td className="px-4 py-3 text-gray-600">{TIPO_LABELS[p.tipo] ?? p.tipo}</td>
+                  <td className="px-4 py-3 text-gray-600">{MECANISMO_LABELS[p.mecanismo] ?? p.mecanismo}</td>
                   <td className="px-4 py-3 text-gray-600">{formatFecha(p.fechaInicio)}</td>
                   <td className="px-4 py-3 text-gray-600">{formatFecha(p.fechaFin)}</td>
                   <td className="px-4 py-3">
@@ -81,19 +80,18 @@ export function PromocionesTable({ promociones, eventoId, recintoId }: Promocion
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      {p.tipo === 'CODIGOS' ? (
+                      <button
+                        onClick={() => setSelectedDescuentos(p)}
+                        className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                      >
+                        Descuentos
+                      </button>
+                      {p.mecanismo === 'CODIGO' && (
                         <button
                           onClick={() => setSelectedCodigos(p)}
                           className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
                         >
                           Códigos
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setSelectedDescuentos(p)}
-                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                        >
-                          Descuentos
                         </button>
                       )}
                       <button

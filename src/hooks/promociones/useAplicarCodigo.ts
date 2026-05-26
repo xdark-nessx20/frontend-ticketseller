@@ -2,11 +2,10 @@ import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { sileo } from 'sileo';
 import { promocionesService } from '../../services/promocionesService';
-import type { AplicarCodigoRequest } from '../../types/promociones.types';
 
 export function useAplicarCodigo(ventaId: string) {
   return useMutation({
-    mutationFn: (data: AplicarCodigoRequest) => promocionesService.aplicarCodigo(ventaId, data),
+    mutationFn: (codigo: string) => promocionesService.aplicarCodigoPromocional(ventaId, codigo),
     onSuccess: () => {
       sileo.success({ title: 'Código aplicado', description: 'El descuento fue aplicado a tu carrito.' });
     },

@@ -4,6 +4,6 @@ import type { DescuentoAplicadoResponse } from '../../types/promociones.types';
 
 export function useAplicarCodigo(ventaId: string) {
   return useMutation<DescuentoAplicadoResponse, Error, string>({
-    mutationFn: (codigo: string) => promocionesService.aplicarCodigo(ventaId, { codigo }),
+    mutationFn: (codigo: string) => promocionesService.aplicarCodigoPromocional(ventaId, codigo),
   });
 }

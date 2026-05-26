@@ -6,9 +6,10 @@ import type {
   CrearPromocionRequest,
   CrearDescuentoRequest,
   CrearCodigosRequest,
-  AplicarCodigoRequest,
-  ActualizarEstadoPromocionRequest, CodigoPromocionalResponse,
+  ActualizarEstadoPromocionRequest,
+  CodigoPromocionalResponse,
 } from '../types/promociones.types';
+import type { TipoUsuario } from '../types/checkout.types';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
@@ -50,8 +51,21 @@ export const promocionesService = {
     return r.data;
   },
 
-  async aplicarCodigo(ventaId: string, data: AplicarCodigoRequest) {
-    const r = await api.post<DescuentoAplicadoResponse>(`/compras/${ventaId}/aplicar-codigo`, data);
+  async calcularDescuentosCarrito(
+    eventoId: string,
+    tipoUsuario: TipoUsuario,
+    items: { zonaId: string; precio: number }[],
+  ) {
+    const r = await api.post<DescuentoAplicadoResponse>('/admin/promociones/calcular-descuentos', {
+      eventoId,
+      tipoUsuario,
+      items,
+    });
+    return r.data;
+  },
+
+  async aplicarCodigoPromocional(ventaId: string, codigo: string) {
+    const r = await api.post<DescuentoAplicadoResponse>(`/compras/${ventaId}/aplicar-codigo`, { codigo });
     return r.data;
   },
 };

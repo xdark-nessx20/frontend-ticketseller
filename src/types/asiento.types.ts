@@ -1,5 +1,5 @@
 export type EstadoTipoAsiento = 'ACTIVO' | 'INACTIVO';
-export type EstadoAsiento = 'DISPONIBLE' | 'BLOQUEADO' | 'RESERVADO' | 'VENDIDO' | 'MANTENIMIENTO' | 'ANULADO' | 'INACTIVO';
+export type EstadoAsiento = 'DISPONIBLE' | 'MANTENIMIENTO' | 'INACTIVO';
 
 export interface TipoAsientoResponse {
   id: string;

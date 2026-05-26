@@ -10,15 +10,11 @@ import type {
   CambiarEstadoMasivoResponse,
 } from '../../types/mantenimiento.types';
 
-const ESTADOS_DESTINO_MASIVO: EstadoAsiento[] = ['DISPONIBLE', 'BLOQUEADO', 'RESERVADO', 'MANTENIMIENTO'];
+const ESTADOS_DESTINO_MASIVO: EstadoAsiento[] = ['DISPONIBLE', 'MANTENIMIENTO', 'INACTIVO'];
 
 const ESTADO_LABELS: Record<EstadoAsiento, string> = {
   DISPONIBLE: 'Disponible',
-  BLOQUEADO: 'Bloqueado',
-  RESERVADO: 'Reservado',
-  VENDIDO: 'Vendido',
   MANTENIMIENTO: 'Mantenimiento',
-  ANULADO: 'Anulado',
   INACTIVO: 'Inactivo',
 };
 

@@ -3,15 +3,14 @@ import { useAsientosEvento } from '../../hooks/mantenimiento/useAsientosEvento';
 import { CambiarEstadoModal } from './CambiarEstadoModal';
 import { CambiarEstadoMasivoModal } from './CambiarEstadoMasivoModal';
 import { BloquearAsientosModal } from '../bloqueos/BloquearAsientosModal';
-import type { AsientoConEstadoResponse, EstadoAsiento } from '../../types/mantenimiento.types';
+import type { AsientoConEstadoResponse, EstadoAsientoDisplay } from '../../types/mantenimiento.types';
 
-const CELDA_CLASES: Record<EstadoAsiento, string> = {
+const CELDA_CLASES: Record<EstadoAsientoDisplay, string> = {
   DISPONIBLE: 'bg-emerald-500 border border-emerald-600 text-white hover:bg-emerald-600',
   BLOQUEADO: 'bg-orange-100 border border-orange-300 text-orange-700 hover:bg-orange-200',
   RESERVADO: 'bg-yellow-100 border border-yellow-300 text-yellow-700 hover:bg-yellow-200',
   VENDIDO: 'bg-red-100 border border-red-300 text-red-700 hover:bg-red-200',
   MANTENIMIENTO: 'bg-gray-200 border border-gray-400 text-gray-600 hover:bg-gray-300',
-  ANULADO: 'bg-gray-100 border border-gray-300 text-gray-400 line-through hover:bg-gray-200',
   INACTIVO: 'bg-gray-50 border border-dashed border-gray-200 text-gray-300 hover:bg-gray-100',
 };
 

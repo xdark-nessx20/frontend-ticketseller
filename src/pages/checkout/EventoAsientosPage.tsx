@@ -5,6 +5,7 @@ import { usePreciosZona } from '../../hooks/eventos/usePreciosZona';
 import { useReservarAsientos } from '../../hooks/checkout/useReservarAsientos';
 import { useAsientosEvento } from '../../hooks/mantenimiento/useAsientosEvento';
 import { useZonas } from '../../hooks/recintos/useZonas';
+import { useCarritoStore } from '../../stores/carritoStore';
 import { ZonaSelectorPanel } from '../../components/checkout/ZonaSelectorPanel';
 import { ResumenCarrito } from '../../components/checkout/ResumenCarrito';
 import { MapaAsientosPanel } from '../../components/checkout/MapaAsientosPanel';
@@ -23,6 +24,7 @@ export function EventoAsientosPage() {
   } = useAsientosEvento(id!);
   const { data: zonas } = useZonas(evento?.recintoId ?? '');
   const { mutate: reservar, isPending } = useReservarAsientos();
+  const setCarritoSeleccion = useCarritoStore(s => s.setSeleccion);
 
   const [seleccion, setSeleccion] = useState<SeleccionZona | null>(null);
   const [asientosSeleccionados, setAsientosSeleccionados] = useState<AsientoConEstadoResponse[]>([]);
@@ -112,6 +114,7 @@ export function EventoAsientosPage() {
 
   function handleReservar() {
     if (!seleccion || !compradorId.trim()) return;
+    setCarritoSeleccion(id!, [seleccion], tipoUsuario);
     reservar({
       eventoId: id!,
       compradorId: compradorId.trim(),
