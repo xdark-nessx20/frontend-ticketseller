@@ -26,6 +26,7 @@ export interface PanelItemResponse {
   tipo: TipoPanelItem;
   id: string;
   asientoId: string | null;
+  numeroAsiento: string | null;
   destinatario: string;
   estado: string;
   fechaCreacion?: string;

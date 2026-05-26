@@ -46,7 +46,7 @@ export function InventarioEventoPage() {
         </Link>
         <span className="mx-2">/</span>
         <Link to={`/admin/eventos/${eventoId}`} className="hover:underline">
-          Evento
+          {evento?.nombre ?? 'Evento'}
         </Link>
         <span className="mx-2">/</span>
         <span className="font-medium text-gray-800">Inventario en tiempo real</span>

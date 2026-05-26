@@ -145,7 +145,7 @@ export function CheckoutPage() {
       <CodigoPromocion
         onAplicar={handleAplicarCodigo}
         isPending={isApplyingCode}
-        descuento={descuentoAplicado}
+        descuento={descuentoManual}
         error={codigoError}
       />
 

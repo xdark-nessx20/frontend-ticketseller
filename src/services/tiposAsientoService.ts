@@ -56,13 +56,17 @@ export const tiposAsientoService = {
   async getMapaAsientos(recintoId: string) {
     const r = await api
         .get<Page<AsientoResponse>>(`/recintos/${recintoId}/mapa/asientos`, {params: {size: 5000}});
-    return r.data.content.map(a => ({...a, existente: a.estado !== 'INACTIVO'}));
+    return r.data.content
+      .map(a => ({...a, existente: a.estado !== 'INACTIVO'}))
+      .sort((a, b) => a.fila - b.fila || a.columna - b.columna);
   },
 
   async crearMapaAsientos(recintoId: string, data: CrearMapaAsientosRequest) {
     const r = await api
         .post<AsientoResponse[]>(`/recintos/${recintoId}/mapa`, data);
-    return r.data.map(a => ({...a, existente: a.estado !== 'INACTIVO'}));
+    return r.data
+      .map(a => ({...a, existente: a.estado !== 'INACTIVO'}))
+      .sort((a, b) => a.fila - b.fila || a.columna - b.columna);
   },
 
   async marcarEspacioVacio(recintoId: string, asientoId: string) {

@@ -69,10 +69,12 @@ export function EventoDetallePage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{evento.nombre}</h1>
-          <p className="mt-1 text-sm text-gray-500">{evento.tipo}</p>
+          <div className="mt-1 flex items-center gap-3.5">
+            <p className="text-sm text-gray-500">{evento.tipo}</p>
+            <EventoEstadoBadge estado={evento.estado} />
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <EventoEstadoBadge estado={evento.estado} />
           <Link
             to={`/admin/eventos/${evento.id}/promociones`}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"

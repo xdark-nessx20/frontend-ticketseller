@@ -11,11 +11,7 @@ import { TRANSICIONES_VALIDAS } from '../../types/mantenimiento.types';
 
 const ESTADO_LABELS: Record<EstadoAsiento, string> = {
   DISPONIBLE: 'Disponible',
-  BLOQUEADO: 'Bloqueado',
-  RESERVADO: 'Reservado',
-  VENDIDO: 'Vendido',
   MANTENIMIENTO: 'Mantenimiento',
-  ANULADO: 'Anulado',
   INACTIVO: 'Inactivo',
 };
 

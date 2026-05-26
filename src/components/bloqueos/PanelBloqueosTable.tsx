@@ -133,8 +133,8 @@ export function PanelBloqueosTable({ eventoId, items }: PanelBloqueosTableProps)
                   <TipoBadge tipo={item.tipo} />
                 </td>
                 <td className="px-4 py-3 text-gray-700">
-                  {item.asientoId ? (
-                    <span className="font-mono text-xs">{item.asientoId}</span>
+                  {item.numeroAsiento ?? item.asientoId ? (
+                    <span className="font-medium text-sm">{item.numeroAsiento ?? item.asientoId}</span>
                   ) : (
                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
                       Acceso general

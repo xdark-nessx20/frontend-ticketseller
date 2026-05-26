@@ -7,5 +7,6 @@ export function useAsientosEvento(eventoId: string) {
     queryFn: () => asientoMantenimientoService.getAsientosEvento(eventoId),
     enabled: !!eventoId,
     retry: false,
+    refetchInterval: 30_000,
   });
 }

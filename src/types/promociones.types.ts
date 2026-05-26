@@ -1,4 +1,4 @@
-export type TipoPromocion = 'PREVENTA' | 'DESCUENTO' | 'CODIGOS';
+export type MecanismoAplicacion = 'AUTOMATICO' | 'CODIGO';
 export type EstadoPromocion = 'ACTIVA' | 'PAUSADA' | 'FINALIZADA';
 export type TipoDescuento = 'PORCENTAJE' | 'MONTO_FIJO';
 export type EstadoCodigoPromocional = 'ACTIVO' | 'AGOTADO' | 'EXPIRADO';
@@ -7,7 +7,7 @@ export type TipoUsuario = 'VIP' | 'GENERAL' | 'PRENSA' | 'PATROCINADOR';
 export interface PromocionResponse {
   id: string;
   nombre: string;
-  tipo: TipoPromocion;
+  mecanismo: MecanismoAplicacion;
   eventoId: string;
   fechaInicio: string;
   fechaFin: string;
@@ -41,7 +41,7 @@ export interface DescuentoAplicadoResponse {
 
 export interface CrearPromocionRequest {
   nombre: string;
-  tipo: TipoPromocion;
+  mecanismo: MecanismoAplicacion;
   eventoId: string;
   fechaInicio: string;
   fechaFin: string;
