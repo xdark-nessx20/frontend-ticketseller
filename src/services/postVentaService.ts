@@ -13,14 +13,25 @@ const api = axios.create({
 });
 
 export const postVentaService = {
-  async getMisCompras() {
-    const r = await api.get<TicketConReembolsoResponse[]>('/compras/mis-compras');
+  async getMisTickets(userId: string) {
+    const r = await api.get<TicketConReembolsoResponse[]>('/compras/mis-compras', {
+      headers: { 'X-Comprador-Id': userId },
+    });
     return r.data;
   },
 
-  async cancelarTickets(data: CancelarTicketRequest) {
-    const r = await api.post<CancelacionResponse>('/tickets/cancelar-parcial', data);
+  async cancelarTicket(ticketId: string) {
+    const r = await api.delete<CancelacionResponse>(`/tickets/${ticketId}/cancelar`);
     return r.data;
+  },
+
+  async cancelarVarios(data: CancelarTicketRequest) {
+    const r = await api.delete<CancelacionResponse>('/tickets/cancelar-varios', { data });
+    return r.data;
+  },
+
+  async cancelarPorEvento(eventoId: string) {
+    await api.delete(`/tickets/eventos/${eventoId}/cancelar`);
   },
 
   async cambiarEstadoTicket(ticketId: string, data: CambiarEstadoTicketRequest) {
@@ -33,8 +44,12 @@ export const postVentaService = {
     return r.data;
   },
 
+  async procesarColaReembolsos() {
+    await api.post('/admin/reembolsos/procesar-cola');
+  },
+
   async getReembolsosPendientes() {
-    const r = await api.get<ReembolsoAdminResponse[]>('/admin/reembolsos');
+    const r = await api.get<ReembolsoAdminResponse[]>('/admin/reembolsos/cola');
     return r.data;
   },
 };

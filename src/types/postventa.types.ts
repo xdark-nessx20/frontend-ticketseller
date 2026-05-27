@@ -10,7 +10,7 @@ export interface ReembolsoResponse {
 }
 
 export interface CancelacionResponse {
-  ticketsCancelados: number;
+  ticketsCancelados: string[];
   reembolsoId: string;
   montoPendiente: number;
 }
@@ -37,11 +37,13 @@ export interface CancelarTicketRequest {
 export interface CambiarEstadoTicketRequest {
   estado: string;
   justificacion: string;
+  agenteId: string | null;
 }
 
 export interface ReembolsoManualRequest {
   tipo: TipoReembolso;
-  monto?: number;
+  monto: number | null;
+  agenteId: string | null;
 }
 
 export interface ReembolsoAdminResponse {

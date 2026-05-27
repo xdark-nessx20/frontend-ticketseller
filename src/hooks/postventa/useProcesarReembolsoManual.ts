@@ -7,8 +7,8 @@ export function useProcesarReembolsoManual(ticketId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: ReembolsoManualRequest) =>
-      postVentaService.procesarReembolso(ticketId, data),
+    mutationFn: (data: Omit<ReembolsoManualRequest, 'agenteId'>) =>
+      postVentaService.procesarReembolso(ticketId, { ...data, agenteId: null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reembolsosPendientes'] });
       sileo.success({ title: 'Reembolso procesado', description: 'El reembolso fue procesado correctamente.' });

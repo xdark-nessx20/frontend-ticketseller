@@ -36,7 +36,7 @@ export function ReembolsoManualModal({ ticketId, montoTotal, onClose }: Reembols
 
   function onSubmit(data: FormValues) {
     mutate(
-      { tipo: data.tipo, monto: data.tipo === 'PARCIAL' ? data.monto : undefined },
+      { tipo: data.tipo, monto: data.tipo === 'PARCIAL' ? (data.monto ?? null) : null },
       { onSuccess: onClose },
     );
   }

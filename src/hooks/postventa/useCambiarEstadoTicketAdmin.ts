@@ -7,8 +7,8 @@ export function useCambiarEstadoTicketAdmin(ticketId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CambiarEstadoTicketRequest) =>
-      postVentaService.cambiarEstadoTicket(ticketId, data),
+    mutationFn: (data: Omit<CambiarEstadoTicketRequest, 'agenteId'>) =>
+      postVentaService.cambiarEstadoTicket(ticketId, { ...data, agenteId: null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reembolsosPendientes'] });
       sileo.success({ title: 'Estado actualizado', description: 'El estado del ticket fue cambiado exitosamente.' });

@@ -8,9 +8,12 @@ export function useCancelarTicket() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CancelarTicketRequest) => postVentaService.cancelarTickets(data),
+    mutationFn: (data: CancelarTicketRequest) =>
+      data.ticketIds.length === 1
+        ? postVentaService.cancelarTicket(data.ticketIds[0])
+        : postVentaService.cancelarVarios(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['misCompras'] });
+      queryClient.invalidateQueries({ queryKey: ['misTickets'] });
       sileo.success({ title: 'Tickets cancelados', description: 'La solicitud de reembolso fue creada correctamente.' });
     },
     onError: (error) => {

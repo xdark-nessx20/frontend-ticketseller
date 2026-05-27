@@ -39,7 +39,8 @@
       "Read(//usr/local/bin/**)",
       "Read(//usr/bin/**)",
       "Bash(git checkout *)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(/home/nestor/.nvm/versions/node/v22.16.0/bin/npm run *)"
     ]
   }
 }

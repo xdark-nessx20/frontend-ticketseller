@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useReembolsosPendientes } from '../../hooks/postventa/useReembolsosPendientes';
+import { useProcesarCola } from '../../hooks/postventa/useProcesarCola';
 import { ReembolsoBadge } from '../../components/postventa/ReembolsoBadge';
 import { ReembolsoManualModal } from '../../components/postventa/ReembolsoManualModal';
 import { CambiarEstadoTicketModal } from '../../components/postventa/CambiarEstadoTicketModal';
@@ -7,6 +8,7 @@ import type { ReembolsoAdminResponse } from '../../types/postventa.types';
 
 export function AdminReembolsosPage() {
   const { data: reembolsos, isLoading, error } = useReembolsosPendientes();
+  const { mutate: procesarCola, isPending: procesandoCola } = useProcesarCola();
   const [procesando, setProcesando] = useState<ReembolsoAdminResponse | null>(null);
   const [cambiandoEstado, setCambiandoEstado] = useState<ReembolsoAdminResponse | null>(null);
 
@@ -16,7 +18,16 @@ export function AdminReembolsosPage() {
         <span className="font-medium text-gray-800">Reembolsos</span>
       </nav>
 
-      <h1 className="text-2xl font-bold text-gray-900">Gestión de Reembolsos</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Gestión de Reembolsos</h1>
+        <button
+          onClick={() => procesarCola()}
+          disabled={procesandoCola}
+          className="rounded-md bg-[#413383] px-4 py-2 text-sm font-medium text-white hover:bg-[#362B6E] disabled:opacity-50"
+        >
+          {procesandoCola ? 'Procesando…' : 'Procesar cola'}
+        </button>
+      </div>
 
       {isLoading && (
         <div className="space-y-2">
