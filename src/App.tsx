@@ -13,6 +13,8 @@ import { CheckoutPage } from './pages/checkout/CheckoutPage';
 import { ConfirmacionPage } from './pages/checkout/ConfirmacionPage';
 import { PanelBloqueosPage } from './pages/bloqueos/PanelBloqueosPage';
 import { InventarioEventoPage } from './pages/inventario/InventarioEventoPage';
+import { MisComprasPage } from './pages/postventa/MisComprasPage';
+import { AdminReembolsosPage } from './pages/postventa/AdminReembolsosPage';
 
 function App() {
   return (
@@ -36,6 +38,8 @@ function App() {
           <Route path="/eventos/:id/asientos" element={<EventoAsientosPage />} />
           <Route path="/checkout/:ventaId" element={<CheckoutPage />} />
           <Route path="/checkout/:ventaId/confirmacion" element={<ConfirmacionPage />} />
+          <Route path="/mis-compras" element={<MisComprasPage />} />
+          <Route path="/admin/reembolsos" element={<AdminReembolsosPage />} />
           <Route path="*" element={<Navigate to="/admin/recintos" replace />} />
         </Routes>
       </main>
