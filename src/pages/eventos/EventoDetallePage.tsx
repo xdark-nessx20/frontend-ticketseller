@@ -145,7 +145,7 @@ export function EventoDetallePage() {
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <p className="text-xs font-medium uppercase text-gray-400">Recinto</p>
-          <p className="mt-1 font-mono text-xs text-gray-600">{evento.recintoId}</p>
+          <p className="mt-1 text-sm font-semibold text-gray-800">{evento.nombreRecinto}</p>
           <Link
             to={`/admin/recintos/${evento.recintoId}`}
             className="mt-1 block text-xs text-[#413383] hover:underline"
