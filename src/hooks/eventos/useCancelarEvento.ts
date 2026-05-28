@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sileo } from 'sileo';
 import { eventoService } from '../../services/eventoService';
+import { postVentaService } from '../../services/postVentaService';
 import type { CancelarEventoRequest } from '../../types/evento.types';
 
 export function useCancelarEvento(eventoId: string) {
@@ -8,7 +9,8 @@ export function useCancelarEvento(eventoId: string) {
 
   return useMutation({
     mutationFn: (data: CancelarEventoRequest) => eventoService.cancelarEvento(eventoId, data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await postVentaService.cancelarPorEvento(eventoId);
       queryClient.invalidateQueries({ queryKey: ['eventos'] });
       sileo.warning({ title: 'Evento cancelado', description: 'El evento fue cancelado correctamente.' });
     },
