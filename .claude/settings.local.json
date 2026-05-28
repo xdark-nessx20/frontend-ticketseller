@@ -40,7 +40,21 @@
       "Read(//usr/bin/**)",
       "Bash(git checkout *)",
       "Bash(git fetch *)",
-      "Bash(/home/nestor/.nvm/versions/node/v22.16.0/bin/npm run *)"
+      "Bash(/home/nestor/.nvm/versions/node/v22.16.0/bin/npm run *)",
+      "Bash(dir \"C:\\\\Users\\\\USUARIO\\\\Documents\\\\Mis GitProyectos\\\\frontend-ticketseller\\\\src\" /s /b)",
+      "Bash(findstr /I \"axios\\\\|http\\\\|api\\\\|client\")",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(curl -s http://localhost:8080/api/v1/admin/eventos)",
+      "Bash(curl -s http://localhost:8080/api/v1/eventos)",
+      "Bash(curl -s \"http://localhost:8080/api/v1/recintos/5f4f73d8-e21c-4b7e-a44d-0ec8487ea6ce/zonas\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/eventos/17195c68-dbcf-4a05-a13c-2748b1bf54e9/zonas\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/inventario/eventos/17195c68-dbcf-4a05-a13c-2748b1bf54e9\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/eventos/17195c68-dbcf-4a05-a13c-2748b1bf54e9/precios\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/recintos/5f4f73d8-e21c-4b7e-a44d-0ec8487ea6ce\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/recintos/5f4f73d8-e21c-4b7e-a44d-0ec8487ea6ce/mapa\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/recintos\")",
+      "Bash(curl -s \"http://localhost:8080/api/v1/recintos/5f4f73d8-e21c-4b7e-a44d-0ec8487ea6ce/estructura\")",
+      "Bash(curl *)"
     ]
   }
 }

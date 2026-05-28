@@ -1,4 +1,4 @@
-export type EstadoVenta = 'PENDIENTE' | 'RESERVADA' | 'COMPLETADA' | 'EXPIRADA' | 'CANCELADA' | 'REEMBOLSADA';
+export type EstadoVenta = 'PENDIENTE' | 'RESERVADA' | 'COMPLETADA' | 'EXPIRADA' | 'FALLIDA' | 'REEMBOLSADA';
 export type EstadoTicket = 'VENDIDO' | 'CANCELADO' | 'REEMBOLSO_PENDIENTE' | 'REEMBOLSADO' | 'ANULADO';
 export type MetodoPago = 'TARJETA' | 'NEQUI' | 'DAVIPLATA' | 'PSE' | 'OTRO';
 export type TipoUsuario = 'VIP' | 'GENERAL' | 'PRENSA' | 'PATROCINADOR';
