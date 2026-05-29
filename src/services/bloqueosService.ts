@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '../api/apiClient';
 import type {
     BloqueoResponse,
     CortesiaResponse,
@@ -8,10 +8,6 @@ import type {
     CrearCortesiaRequest,
     EditarBloqueoRequest,
 } from '../types/bloqueos.types';
-
-const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
-});
 
 export const bloqueosService = {
     async getPanel(eventoId: string, filtros?: PanelFiltros) {

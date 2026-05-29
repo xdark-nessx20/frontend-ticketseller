@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '../api/apiClient';
 import type {
   PromocionResponse,
   DescuentoResponse,
@@ -10,10 +10,6 @@ import type {
   CodigoPromocionalResponse,
 } from '../types/promociones.types';
 import type { TipoUsuario } from '../types/checkout.types';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
-});
 
 export const promocionesService = {
   async getPromociones(eventoId: string) {

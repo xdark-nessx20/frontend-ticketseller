@@ -58,7 +58,8 @@
       "Bash(python3 -m json.tool)",
       "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(f'zona: {z[\\\\\"id\\\\\"]} nombre: {z[\\\\\"nombre\\\\\"]} capacidad: {z[\\\\\"capacidad\\\\\"]}'\\) for z in data]\")",
       "Bash(python3 -c ' *)",
-      "Bash(xargs grep -l \"resolver\")"
+      "Bash(xargs grep -l \"resolver\")",
+      "Bash(tsc --noEmit)"
     ]
   }
 }

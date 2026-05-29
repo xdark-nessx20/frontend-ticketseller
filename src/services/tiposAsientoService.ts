@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '../api/apiClient';
 import type {
   TipoAsientoResponse,
   AsientoResponse,
@@ -10,10 +10,6 @@ import type {
   TipoAsientoFiltros,
   Page,
 } from '../types/asiento.types';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
-});
 
 export const tiposAsientoService = {
   async getTiposAsiento(filtros: TipoAsientoFiltros = {}) {

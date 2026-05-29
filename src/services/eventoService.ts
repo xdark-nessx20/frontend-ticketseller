@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '../api/apiClient';
 import type {
   EventoResponse,
   PrecioZonaResponse,
@@ -8,10 +8,6 @@ import type {
   ConfigurarPreciosRequest,
   EventoFiltros,
 } from '../types/evento.types';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
-});
 
 export const eventoService = {
   async getEventos(filtros: EventoFiltros = {}) {

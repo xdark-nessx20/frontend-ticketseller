@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from '../api/apiClient';
 import type {
   AsientoConEstadoResponse,
   CambiarEstadoRequest,
@@ -6,10 +6,6 @@ import type {
   CambiarEstadoMasivoResponse,
   HistorialCambioResponse,
 } from '../types/mantenimiento.types';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
-});
 
 export const asientoMantenimientoService = {
   async getAsientosEvento(eventoId: string) {
