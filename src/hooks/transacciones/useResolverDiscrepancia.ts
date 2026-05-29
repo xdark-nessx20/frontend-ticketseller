@@ -11,6 +11,7 @@ export function useResolverDiscrepancia(pagoId: string) {
       transaccionesService.resolverDiscrepancia(pagoId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discrepancias'] });
+      queryClient.invalidateQueries({ queryKey: ['transacciones'] });
       sileo.success({ title: 'Discrepancia resuelta', description: 'El pago fue procesado correctamente.' });
     },
     onError: () => {

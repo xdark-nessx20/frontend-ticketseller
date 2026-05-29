@@ -11,6 +11,7 @@ export function useCambiarEstadoVenta(ventaId: string) {
       transaccionesService.cambiarEstadoVenta(ventaId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transacciones'] });
+      queryClient.invalidateQueries({ queryKey: ['historial-venta', ventaId] });
       sileo.success({ title: 'Estado actualizado', description: 'El estado de la venta fue cambiado exitosamente.' });
     },
   });
