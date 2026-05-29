@@ -16,7 +16,6 @@ import { InventarioEventoPage } from './pages/inventario/InventarioEventoPage';
 import { MisComprasPage } from './pages/postventa/MisComprasPage';
 import { AdminReembolsosPage } from './pages/postventa/AdminReembolsosPage';
 import { TransaccionesPage } from './pages/transacciones/TransaccionesPage';
-import { DiscrepanciasPage } from './pages/transacciones/DiscrepanciasPage';
 
 function App() {
   return (
@@ -43,7 +42,6 @@ function App() {
           <Route path="/mis-compras" element={<MisComprasPage />} />
           <Route path="/admin/reembolsos" element={<AdminReembolsosPage />} />
           <Route path="/admin/transacciones" element={<TransaccionesPage />} />
-          <Route path="/admin/transacciones/discrepancias" element={<DiscrepanciasPage />} />
           <Route path="*" element={<Navigate to="/admin/recintos" replace />} />
         </Routes>
       </main>

@@ -1,13 +1,5 @@
 import type { EstadoVenta } from './checkout.types';
 
-export type EstadoConciliacion =
-  | 'PENDIENTE'
-  | 'VERIFICADO'
-  | 'EN_DISCREPANCIA'
-  | 'CONFIRMADO'
-  | 'CONFIRMADO_MANUALMENTE'
-  | 'EXPIRADO';
-
 export interface HistorialEstadoVentaResponse {
   id: string;
   ventaId: string;
@@ -28,19 +20,6 @@ export interface VentaResumenResponse {
   fechaExpiracion: string;
 }
 
-export interface PagoResponse {
-  id: string;
-  ventaId: string;
-  idExternoPasarela: string | null;
-  montoEsperado: number;
-  montoPasarela: number;
-  estado: EstadoConciliacion;
-  agenteId: string | null;
-  justificacionResolucion: string | null;
-  fechaCreacion: string;
-  fechaActualizacion: string;
-}
-
 export interface TransaccionFiltros {
   estado?: EstadoVenta;
   eventoId?: string;
@@ -53,22 +32,4 @@ export interface TransaccionFiltros {
 export interface CambiarEstadoVentaRequest {
   nuevoEstado: EstadoVenta;
   justificacion: string;
-}
-
-export interface VerificarPagoRequest {
-  ventaId: string;
-  montoPasarela: number;
-  idExternoPasarela?: string;
-}
-
-export interface ConfirmarPagoRequest {
-  ventaId: string;
-  idExternoPasarela: string;
-  montoPasarela: number;
-}
-
-export interface ResolverDiscrepanciaRequest {
-  confirmar: boolean;
-  justificacion: string;
-  agenteId: string;
 }
