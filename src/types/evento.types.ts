@@ -8,6 +8,7 @@ export interface EventoResponse {
   fechaFin: string;
   tipo: TipoEvento;
   recintoId: string;
+  nombreRecinto: string;
   estado: EstadoEvento;
   motivoCancelacion: string | null;
   reingresoHabilitado: boolean;
