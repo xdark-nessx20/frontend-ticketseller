@@ -5,7 +5,7 @@ export interface HistorialEstadoVentaResponse {
   ventaId: string;
   estadoAnterior: string;
   estadoNuevo: string;
-  actorId: string;
+  agenteId: string | null;
   fechaCambio: string;
   justificacion: string | null;
 }
