@@ -2,10 +2,8 @@ import axios from 'axios';
 import type {
   VentaResumenResponse,
   HistorialEstadoVentaResponse,
-  PagoResponse,
   TransaccionFiltros,
   CambiarEstadoVentaRequest,
-  ResolverDiscrepanciaRequest,
 } from '../types/transacciones.types';
 
 const api = axios.create({
@@ -25,16 +23,6 @@ export const transaccionesService = {
 
   async cambiarEstadoVenta(ventaId: string, body: CambiarEstadoVentaRequest): Promise<VentaResumenResponse> {
     const { data } = await api.patch<VentaResumenResponse>(`/admin/ventas/${ventaId}/estado`, body);
-    return data;
-  },
-
-  async getDiscrepancias(): Promise<PagoResponse[]> {
-    const { data } = await api.get<PagoResponse[]>('/admin/conciliacion/discrepancias');
-    return data;
-  },
-
-  async resolverDiscrepancia(pagoId: string, body: ResolverDiscrepanciaRequest): Promise<PagoResponse> {
-    const { data } = await api.patch<PagoResponse>(`/admin/conciliacion/discrepancias/${pagoId}/resolver`, body);
     return data;
   },
 };

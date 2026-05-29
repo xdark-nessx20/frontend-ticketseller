@@ -83,10 +83,10 @@ export function HistorialVentaPanel({ ventaId, onClose }: HistorialVentaPanelPro
 
                   <p className="mt-1.5 text-xs text-gray-500">
                     {new Date(entrada.fechaCambio).toLocaleString('es-CO')}
-                    {entrada.actorId && (
+                    {entrada.agenteId && (
                       <>
                         {' · '}
-                        <span className="font-mono">{entrada.actorId.slice(0, 8)}…</span>
+                        <span className="font-mono">{entrada.agenteId.slice(0, 8)}…</span>
                       </>
                     )}
                   </p>
