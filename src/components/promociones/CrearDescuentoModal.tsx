@@ -6,7 +6,7 @@ import { useZonas } from '../../hooks/recintos/useZonas';
 
 const schema = z
   .object({
-    tipo: z.enum(['PORCENTAJE', 'MONTO_FIJO'] as const, { required_error: 'Requerido' }),
+    tipo: z.enum(['PORCENTAJE', 'MONTO_FIJO'] as const, { error: 'Requerido' }),
     valor: z.coerce.number().positive('Debe ser un valor positivo'),
     zonaId: z.string().optional(),
     acumulable: z.boolean().optional(),

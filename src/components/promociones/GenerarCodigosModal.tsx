@@ -6,7 +6,7 @@ import { useCrearCodigos } from '../../hooks/promociones/useCrearCodigos';
 const schema = z.object({
   cantidad: z.coerce.number().int().positive('Debe ser un número positivo'),
   prefijo: z.string().optional(),
-  usosMaximosPorCodigo: z.coerce.number().int().positive('Debe ser positivo').optional().or(z.literal('')),
+  usosMaximosPorCodigo: z.union([z.coerce.number().int().positive('Debe ser positivo'), z.literal('')]).optional(),
   fechaFin: z.string().min(1, 'Requerido'),
 });
 

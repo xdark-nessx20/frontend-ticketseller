@@ -7,7 +7,7 @@ const schema = z
   .object({
     tipo: z.enum(['TOTAL', 'PARCIAL']),
     monto: z
-      .number({ invalid_type_error: 'Ingrese un número válido' })
+      .number({ error: 'Ingrese un número válido' })
       .min(0.01, 'El monto debe ser mayor a cero')
       .optional(),
   })
