@@ -24,7 +24,7 @@ export function GenerarCodigosModal({ promocionId, onClose }: GenerarCodigosModa
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  } = useForm<z.input<typeof schema>, unknown, FormValues>({ resolver: zodResolver(schema) });
 
   function onSubmit(data: FormValues) {
     mutate(
@@ -39,7 +39,7 @@ export function GenerarCodigosModal({ promocionId, onClose }: GenerarCodigosModa
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
         <h2 className="text-lg font-semibold text-gray-800">Generar Códigos Promocionales</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
