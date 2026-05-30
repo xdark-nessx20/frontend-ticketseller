@@ -1,13 +1,9 @@
-import axios from 'axios';
+import { api } from './api';
 import type {
   VentaDetalleResponse,
   ReservarAsientosRequest,
   ProcesarPagoRequest,
 } from '../types/checkout.types';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
-});
 
 export const checkoutService = {
   async reservarAsientos(data: ReservarAsientosRequest) {

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from './api';
 import type {
   RecintoResponse,
   RecintoEstructuraResponse,
@@ -13,10 +13,6 @@ import type {
   RecintoFiltros,
   PageResponse,
 } from '../types/recinto.types';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
-});
 
 export const recintosService = {
   async getRecintos(filtros: RecintoFiltros = {}) {

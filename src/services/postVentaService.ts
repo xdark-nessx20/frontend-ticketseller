@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from './api';
 import type {
   TicketConReembolsoResponse,
   CancelacionResponse,
@@ -7,10 +7,6 @@ import type {
   ReembolsoManualRequest,
   ReembolsoAdminResponse,
 } from '../types/postventa.types';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
-});
 
 export const postVentaService = {
   async getMisTickets(userId: string) {
