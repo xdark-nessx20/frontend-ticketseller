@@ -8,7 +8,7 @@ import type { MecanismoAplicacion, TipoUsuario } from '../../types/promociones.t
 const schema = z
   .object({
     nombre: z.string().min(1, 'Requerido'),
-    mecanismo: z.enum(['AUTOMATICO', 'CODIGO'] as const, { required_error: 'Requerido' }),
+    mecanismo: z.enum(['AUTOMATICO', 'CODIGO'] as const, { error: 'Requerido' }),
     fechaInicio: z.string().min(1, 'Requerido'),
     fechaFin: z.string().min(1, 'Requerido'),
     tipoUsuarioRestringido: z.enum(['VIP', 'GENERAL', 'PRENSA', 'PATROCINADOR', ''] as const).optional(),
