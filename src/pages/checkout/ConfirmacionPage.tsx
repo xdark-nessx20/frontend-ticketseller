@@ -62,7 +62,7 @@ export function ConfirmacionPage() {
       </div>
 
       <div className="flex items-center justify-center gap-6">
-        <Link to="/admin/eventos" className="text-sm text-[#413383] hover:underline">
+        <Link to="/eventos" className="text-sm text-[#413383] hover:underline">
           Volver a eventos
         </Link>
         {detalle.tickets.some(t => t.codigoQr) && (
