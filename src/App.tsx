@@ -8,6 +8,7 @@ import { EventosPage } from './pages/eventos/EventosPage';
 import { EventoDetallePage } from './pages/eventos/EventoDetallePage';
 import { MapaAsientosPage } from './pages/asientos/MapaAsientosPage';
 import { PromocionesPage } from './pages/promociones/PromocionesPage';
+import { EventosCatalogoPage } from './pages/eventos/EventosCatalogoPage';
 import { EventoAsientosPage } from './pages/checkout/EventoAsientosPage';
 import { CheckoutPage } from './pages/checkout/CheckoutPage';
 import { ConfirmacionPage } from './pages/checkout/ConfirmacionPage';
@@ -31,15 +32,20 @@ function App() {
           <Route path="/admin/recintos/:id" element={<VenueDetailPage />} />
           <Route path="/admin/recintos/:id/editar" element={<EditVenuePage />} />
           <Route path="/admin/recintos/:id/mapa" element={<MapaAsientosPage />} />
+
           <Route path="/admin/eventos" element={<EventosPage />} />
           <Route path="/admin/eventos/:id" element={<EventoDetallePage />} />
           <Route path="/admin/eventos/:eventoId/promociones" element={<PromocionesPage />} />
           <Route path="/admin/eventos/:id/bloqueos" element={<PanelBloqueosPage />} />
           <Route path="/admin/eventos/:id/inventario" element={<InventarioEventoPage />} />
+
+          <Route path="/eventos" element={<EventosCatalogoPage />} />
           <Route path="/eventos/:id/asientos" element={<EventoAsientosPage />} />
           <Route path="/checkout/:ventaId" element={<CheckoutPage />} />
           <Route path="/checkout/:ventaId/confirmacion" element={<ConfirmacionPage />} />
+
           <Route path="/mis-compras" element={<MisComprasPage />} />
+
           <Route path="/admin/reembolsos" element={<AdminReembolsosPage />} />
           <Route path="/admin/transacciones" element={<TransaccionesPage />} />
           <Route path="*" element={<Navigate to="/admin/recintos" replace />} />

@@ -1,5 +1,5 @@
 export type EstadoEvento = 'ACTIVO' | 'EN_PROGRESO' | 'FINALIZADO' | 'CANCELADO';
-export type TipoEvento = string;
+export type TipoEvento = 'CONCIERTO' | 'PARTIDO' | 'OBRA_TEATRO' | 'FESTIVAL' | 'CONFERENCIA' | 'OTRO';
 
 export interface EventoResponse {
   id: string;
@@ -54,4 +54,7 @@ export interface ConfigurarPreciosRequest {
 
 export interface EventoFiltros {
   estado?: EstadoEvento;
+  tipo?: TipoEvento;
+  fechaInicioDesde?: string;
+  fechaInicioHasta?: string;
 }

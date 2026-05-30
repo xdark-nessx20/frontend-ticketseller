@@ -2,13 +2,24 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axios from 'axios';
-import type { EventoResponse } from '../../types/evento.types';
+import type { EventoResponse, TipoEvento } from '../../types/evento.types';
 import { useEditarEvento } from '../../hooks/eventos/useEditarEvento';
+
+const TIPOS_EVENTO: [TipoEvento, ...TipoEvento[]] = ['CONCIERTO', 'PARTIDO', 'OBRA_TEATRO', 'FESTIVAL', 'CONFERENCIA', 'OTRO'];
+
+const TIPO_LABELS: Record<TipoEvento, string> = {
+  CONCIERTO: 'Concierto',
+  PARTIDO: 'Partido',
+  OBRA_TEATRO: 'Obra de teatro',
+  FESTIVAL: 'Festival',
+  CONFERENCIA: 'Conferencia',
+  OTRO: 'Otro',
+};
 
 const schema = z
   .object({
     nombre: z.string().min(1, 'Requerido'),
-    tipo: z.string().min(1, 'Requerido'),
+    tipo: z.enum(TIPOS_EVENTO),
     fechaInicio: z.string().min(1, 'Requerido'),
     fechaFin: z.string().min(1, 'Requerido'),
     reingresoHabilitado: z.boolean(),
@@ -41,14 +52,12 @@ export function EditarEventoModal({ evento, onClose }: EditarEventoModalProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       nombre: evento.nombre,
-      tipo: evento.tipo.toUpperCase(),
+      tipo: evento.tipo,
       fechaInicio: toDatetimeLocal(evento.fechaInicio),
       fechaFin: toDatetimeLocal(evento.fechaFin),
       reingresoHabilitado: evento.reingresoHabilitado,
     },
   });
-
-  const tipoField = register('tipo');
 
   function onSubmit(data: FormValues) {
     mutate(
@@ -93,14 +102,14 @@ export function EditarEventoModal({ evento, onClose }: EditarEventoModalProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Tipo</label>
-            <input
-              {...tipoField}
-              onChange={e => {
-                e.target.value = e.target.value.toUpperCase();
-                tipoField.onChange(e);
-              }}
+            <select
+              {...register('tipo')}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
+            >
+              {TIPOS_EVENTO.map(t => (
+                <option key={t} value={t}>{TIPO_LABELS[t]}</option>
+              ))}
+            </select>
             {errors.tipo && (
               <p className="mt-1 text-xs text-red-600">{errors.tipo.message}</p>
             )}

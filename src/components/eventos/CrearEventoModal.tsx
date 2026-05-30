@@ -4,11 +4,23 @@ import { z } from 'zod';
 import axios from 'axios';
 import { useCrearEvento } from '../../hooks/eventos/useCrearEvento';
 import { useRecintos } from '../../hooks/recintos/useRecintos';
+import type { TipoEvento } from '../../types/evento.types';
+
+const TIPOS_EVENTO: [TipoEvento, ...TipoEvento[]] = ['CONCIERTO', 'PARTIDO', 'OBRA_TEATRO', 'FESTIVAL', 'CONFERENCIA', 'OTRO'];
+
+const TIPO_LABELS: Record<TipoEvento, string> = {
+  CONCIERTO: 'Concierto',
+  PARTIDO: 'Partido',
+  OBRA_TEATRO: 'Obra de teatro',
+  FESTIVAL: 'Festival',
+  CONFERENCIA: 'Conferencia',
+  OTRO: 'Otro',
+};
 
 const schema = z
   .object({
     nombre: z.string().min(1, 'Requerido'),
-    tipo: z.string().min(1, 'Requerido'),
+    tipo: z.enum(TIPOS_EVENTO),
     fechaInicio: z.string().min(1, 'Requerido'),
     fechaFin: z.string().min(1, 'Requerido'),
     recintoId: z.string().min(1, 'Seleccione un recinto'),
@@ -35,8 +47,6 @@ export function CrearEventoModal({ onClose }: CrearEventoModalProps) {
     setError,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { reingresoHabilitado: false } });
-
-  const tipoField = register('tipo');
 
   function onSubmit(data: FormValues) {
     mutate(
@@ -83,15 +93,15 @@ export function CrearEventoModal({ onClose }: CrearEventoModalProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Tipo</label>
-            <input
-              {...tipoField}
-              onChange={e => {
-                e.target.value = e.target.value.toUpperCase();
-                tipoField.onChange(e);
-              }}
-              placeholder="CONCIERTO, TEATRO, CONFERENCIA…"
+            <select
+              {...register('tipo')}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
+            >
+              <option value="">Seleccionar tipo…</option>
+              {TIPOS_EVENTO.map(t => (
+                <option key={t} value={t}>{TIPO_LABELS[t]}</option>
+              ))}
+            </select>
             {errors.tipo && (
               <p className="mt-1 text-xs text-red-600">{errors.tipo.message}</p>
             )}
